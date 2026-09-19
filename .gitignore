@@ -1,0 +1,99 @@
+# =============================================================
+# .gitignore cho Unity 6.3 LTS (6000.3.x) - Universal 3D (URP)
+# =============================================================
+
+# --- Thư mục do Unity tự sinh ra (KHÔNG commit) ---
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+
+# --- Memory Profiler / Recorder ---
+/[Mm]emoryCaptures/
+/[Rr]ecordings/
+
+# --- Code coverage (Unity Test Framework) ---
+/[Cc]ode[Cc]overage/
+
+# --- Asset Store Tools ---
+/[Aa]ssets/AssetStoreTools*
+
+# --- IDE: Visual Studio / Rider / VS Code ---
+.vs/
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json
+!.vscode/tasks.json
+/[Aa]ssets/Plugins/Editor/JetBrains*
+
+# --- File project/solution do Unity tự sinh (tạo lại khi mở project) ---
+ExportedObj/
+.consulo/
+*.csproj
+*.unityproj
+*.sln
+*.slnx
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.pidb.meta
+*.booproj
+*.svd
+*.pdb
+*.pdb.meta
+*.mdb
+*.mdb.meta
+*.opendb
+*.VC.db
+
+# --- Thông tin hệ thống / crash ---
+sysinfo.txt
+crashlytics-build.properties
+
+# --- Build output ---
+*.apk
+*.aab
+*.app
+*.unitypackage
+*.unitypackage.meta
+
+# --- Unity Editor tạm ---
+/[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
+.utmp/
+
+# --- Android / Gradle cache ---
+.gradle/
+local.properties
+*.keystore
+*.jks
+
+# --- Addressables (bỏ comment nếu dùng Addressables) ---
+# /[Aa]ssets/AddressableAssetsData/*/*.bin*
+# /[Aa]ssets/StreamingAssets/aa*
+# /[Ss]erverData/
+# /[Aa]ssets/AddressableAssetsData/link.xml*
+
+# --- Hệ điều hành ---
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# --- Ghi chú ---
+# * PHẢI commit: Assets/, Packages/manifest.json, Packages/packages-lock.json,
+#   ProjectSettings/ và TẤT CẢ file .meta.
+# * Assets/Settings/ (URP Asset, Renderer, Volume Profile...) cần được commit.
+# * Nên đặt: Edit > Project Settings > Editor > Version Control Mode = Visible Meta Files,
+#   Asset Serialization Mode = Force Text.
