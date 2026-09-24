@@ -18,7 +18,7 @@ public class CameraController : MonoBehaviour
         }
         else
         {
-            Debug.LogError("CameraController không tìm thấy đối tượng có Tag 'Player'!");
+            Debug.LogError("CameraController không tìm thấy đối tượng có Tag 'Enemy'!");
         }
     }
 

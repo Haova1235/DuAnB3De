@@ -1,27 +1,24 @@
 ﻿using UnityEngine;
-using UnityEngine.AI;
-using System.Collections.Generic;
 
-public class Enemy : MonoBehaviour
+[RequireComponent(typeof(EnemyPatrol))]
+[RequireComponent(typeof(EnemyCombat))]
+[RequireComponent(typeof(EnemyView))]
+public class EnemyController : MonoBehaviour
 {
-    private NavMeshAgent agent;
     private Transform player;
+    private EnemyPatrol patrolScript;
+    private EnemyCombat combatScript;
+    private EnemyView viewScript;
 
-    [Header("Cài đặt tầm nhìn & tấn công")]
-    [SerializeField] private float visionRange = 10f;    // Tầm nhìn phát hiện player
-    [SerializeField] private float attackRange = 2f;     // Tầm đánh cận chiến
-    [SerializeField] private float attackCooldown = 1.5f;// Thời gian hồi chiêu đánh
-    private float lastAttackTime;
-
-    [Header("Cài đặt Tuần tra cố định")]
-    [SerializeField] private List<Transform> waypoints;  // Danh sách các điểm tuần tra
-    [SerializeField] private float patrolSpeed = 3.5f;   // Tốc độ đi tuần
-    [SerializeField] private float chaseSpeed = 6f;      // Tốc độ rượt đuổi
-    private int currentWaypointIndex = 0;
+    [Header("Tầm nhìn & Tương tác")]
+    [SerializeField] private float attackRange = 2f; // Khoảng cách dừng lại để đánh
 
     void Start()
     {
-        agent = GetComponent<NavMeshAgent>();
+        // Lấy các component đã được gắn trên Enemy
+        patrolScript = GetComponent<EnemyPatrol>();
+        combatScript = GetComponent<EnemyCombat>();
+        viewScript = GetComponent<EnemyView>();
 
         // Tự động tìm Player dựa vào Tag
         GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
@@ -29,11 +26,9 @@ public class Enemy : MonoBehaviour
         {
             player = playerObj.transform;
         }
-
-        // Bắt đầu di chuyển đến điểm tuần tra đầu tiên
-        if (waypoints != null && waypoints.Count > 0)
+        else
         {
-            agent.SetDestination(waypoints[currentWaypointIndex].position);
+            Debug.LogError("Không tìm thấy đối tượng nào có Tag là 'Player' trong Scene!");
         }
     }
 
@@ -41,73 +36,32 @@ public class Enemy : MonoBehaviour
     {
         if (player == null) return;
 
+        // 1. Kiểm tra xem Player có đang nằm trong tầm nhìn hình quạt không (dựa vào script EnemyView)
+        bool canSeePlayer = viewScript.CanSeePlayer();
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
 
-        // 1. Ngoài tầm nhìn -> Tiếp tục lộ trình tuần tra
-        if (distanceToPlayer > visionRange)
+        // --- HỆ THỐNG ĐIỀU PHỐI TRẠNG THÁI ---
+
+        // Trường hợp 1: Không thấy Player trong hình quạt (hoặc đứng sau lưng) -> Tiếp tục đi tuần
+        if (!canSeePlayer)
         {
-            PatrolRoutine();
+            patrolScript.DoPatrol();
         }
-        // 2. Trong tầm nhìn nhưng ngoài tầm đánh -> Rượt đuổi theo Player
+        // Trường hợp 2: Thấy Player trong hình quạt nhưng khoảng cách vẫn ngoài tầm đánh -> Rượt đuổi
         else if (distanceToPlayer > attackRange)
         {
-            ChasePlayer();
+            combatScript.Chase(player);
         }
-        // 3. Trong tầm đánh -> Dừng lại tấn công
+        // Trường hợp 3: Đã vào trong tầm đánh -> Dừng lại tấn công
         else
         {
-            AttackPlayer();
+            combatScript.Attack(player);
         }
     }
 
-    void PatrolRoutine()
-    {
-        if (waypoints == null || waypoints.Count == 0) return;
-
-        agent.isStopped = false;
-        agent.speed = patrolSpeed;
-
-        // Nếu quái đã đi đến gần điểm waypoint hiện tại, chuyển sang điểm tiếp theo
-        if (!agent.pathPending && agent.remainingDistance <= agent.stoppingDistance)
-        {
-            currentWaypointIndex = (currentWaypointIndex + 1) % waypoints.Count;
-            agent.SetDestination(waypoints[currentWaypointIndex].position);
-        }
-    }
-
-    void ChasePlayer()
-    {
-        agent.isStopped = false;
-        agent.speed = chaseSpeed;
-        agent.SetDestination(player.position);
-    }
-
-    void AttackPlayer()
-    {
-        agent.isStopped = true;
-
-        // Xoay mặt về phía Player
-        Vector3 direction = (player.position - transform.position).normalized;
-        direction.y = 0;
-        if (direction != Vector3.zero)
-        {
-            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(direction), Time.deltaTime * 5f);
-        }
-
-        // Thực hiện đòn đánh theo thời gian hồi chiêu
-        if (Time.time >= lastAttackTime + attackCooldown)
-        {
-            lastAttackTime = Time.time;
-            Debug.Log("Quái đang tấn công Player!");
-        }
-    }
-
-    // Vẽ bán kính tầm nhìn để dễ căn chỉnh trên Scene
+    // Vẽ bán kính tầm đánh trên Scene View để dễ canh chỉnh
     private void OnDrawGizmosSelected()
     {
-        Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, visionRange);
-
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, attackRange);
     }
