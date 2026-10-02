@@ -35,26 +35,34 @@ public class EnemyTrapSpawner : MonoBehaviour
     {
         if (trapPrefab != null)
         {
-            // Tạo bẫy ngay tại vị trí chân của Enemy
-            GameObject newTrap = Instantiate(trapPrefab, transform.position, Quaternion.identity);
+            // Đặt bẫy hơi dịch về phía sau chân Enemy một chút để tránh kẹt ngay tâm
+            Vector3 spawnPosition = transform.position - (transform.forward * 0.5f) + new Vector3(0, 0.2f, 0);
 
-            // Gửi thông tin Spawner này vào bẫy để bẫy có thể gọi lại khi bị đạp trúng
+            GameObject newTrap = Instantiate(trapPrefab, spawnPosition, Quaternion.identity);
+
+            // --- TỰ ĐỘNG BỎ QUA VA CHẠM GIỮA ENEMY VÀ BẪY ---
+            Collider enemyCollider = GetComponent<Collider>();
+            Collider[] trapColliders = newTrap.GetComponentsInChildren<Collider>();
+
+            if (enemyCollider != null)
+            {
+                foreach (var trapCol in trapColliders)
+                {
+                    Physics.IgnoreCollision(enemyCollider, trapCol, true);
+                }
+            }
+            // ------------------------------------------------
+
             Trap trapComponent = newTrap.GetComponent<Trap>();
             if (trapComponent != null)
             {
                 trapComponent.Initialize(this);
             }
 
-            // Thêm bẫy mới vào danh sách quản lý
             activeTraps.Add(newTrap);
-            Debug.Log("Enemy đã đặt 1 bẫy mới. Tổng số bẫy hiện tại: " + activeTraps.Count + "/3");
-        }
-        else
-        {
-            Debug.LogWarning("Chưa gán Prefab cái bẫy vào ô Trap Prefab trên Inspector!");
+            Debug.Log("Enemy thả bẫy an toàn. Tổng số bẫy: " + activeTraps.Count + "/3");
         }
     }
-
     // Hàm nhận thông báo từ bẫy khi bẫy bị Player đạp trúng và biến mất
     public void OnTrapDestroyed(GameObject trapObj)
     {

@@ -12,9 +12,10 @@ GameObject:
   - component: {fileID: 1704079385728434848}
   - component: {fileID: 6460367698454911963}
   - component: {fileID: 6883770267647386629}
+  - component: {fileID: -2051919163960537847}
   - component: {fileID: -6736657594394639224}
   - component: {fileID: -384402964703462154}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Trap
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -112,8 +113,29 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Size: {x: 0.9269947, y: 1.2736326, z: 0.89501935}
+  m_Center: {x: -0.044620328, y: 0.10481141, z: -0.162809}
+--- !u!65 &-2051919163960537847
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 370007790451973453}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.9808452, y: 1, z: 0.9638194}
+  m_Center: {x: -0.0014525872, y: 0, z: -0.014875152}
 --- !u!54 &-6736657594394639224
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -137,10 +159,10 @@ Rigidbody:
   m_ImplicitCom: 1
   m_ImplicitTensor: 1
   m_UseGravity: 1
-  m_IsKinematic: 1
+  m_IsKinematic: 0
   m_Interpolate: 0
-  m_Constraints: 0
-  m_CollisionDetection: 0
+  m_Constraints: 112
+  m_CollisionDetection: 2
 --- !u!114 &-384402964703462154
 MonoBehaviour:
   m_ObjectHideFlags: 0
