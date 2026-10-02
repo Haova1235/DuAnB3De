@@ -18,6 +18,7 @@ public class EnemyCombat : MonoBehaviour
 
     public void Chase(Transform target)
     {
+        // Luôn mở khóa di chuyển khi rượt đuổi
         agent.isStopped = false;
         agent.speed = chaseSpeed;
         agent.SetDestination(target.position);
@@ -25,17 +26,19 @@ public class EnemyCombat : MonoBehaviour
 
     public void Attack(Transform target)
     {
+        // Dừng lại hoàn toàn khi đang đứng trong tầm đánh để tấn công
         agent.isStopped = true;
 
-        // Xoay mặt mượt mà về phía Player
-        Vector3 direction = (target.position - transform.position).normalized;
+        // Xoay mặt mượt mà về phía Player một cách an toàn (tránh lỗi xoay tròn)
+        Vector3 direction = (target.position - transform.position);
         direction.y = 0;
-        if (direction != Vector3.zero)
+        if (direction.sqrMagnitude > 0.01f)
         {
-            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(direction), Time.deltaTime * 5f);
+            Quaternion targetRotation = Quaternion.LookRotation(direction.normalized);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 5f);
         }
 
-        // Hồi chiêu đòn đánh
+        // Hồi chiêu đòn đánh liên tục theo nhịp
         if (Time.time >= lastAttackTime + attackCooldown)
         {
             lastAttackTime = Time.time;
@@ -45,6 +48,13 @@ public class EnemyCombat : MonoBehaviour
 
     void PerformAttackAction()
     {
-        Debug.Log("Enemy tấn công Player !");
+        Debug.Log("Enemy đang tấn công Player!");
+        // Thêm logic gây sát thương trực tiếp lên Player ở đây nếu cần (ví dụ: target.GetComponent<PlayerHealth>()?.TakeDamage(...));
+    }
+
+    // Hàm chủ động mở khóa Agent khi chuyển trạng thái khỏi Combat (về Patrol)
+    public void StopCombat()
+    {
+        agent.isStopped = false;
     }
 }

@@ -36,29 +36,27 @@ public class EnemyController : MonoBehaviour
     {
         if (player == null) return;
 
-        // 1. Kiểm tra xem Player có đang nằm trong tầm nhìn hình quạt không (dựa vào script EnemyView)
         bool canSeePlayer = viewScript.CanSeePlayer();
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
 
-        // --- HỆ THỐNG ĐIỀU PHỐI TRẠNG THÁI ---
-
-        // Trường hợp 1: Không thấy Player trong hình quạt (hoặc đứng sau lưng) -> Tiếp tục đi tuần
+        // Trường hợp 1: Không thấy Player -> Tiếp tục đi tuần
         if (!canSeePlayer)
         {
+            // Bắt buộc gọi StopCombat để mở khóa agent.isStopped trước khi cho tuần tra
+            combatScript.StopCombat();
             patrolScript.DoPatrol();
         }
-        // Trường hợp 2: Thấy Player trong hình quạt nhưng khoảng cách vẫn ngoài tầm đánh -> Rượt đuổi
+        // Trường hợp 2: Thấy nhưng ngoài tầm đánh -> Rượt đuổi
         else if (distanceToPlayer > attackRange)
         {
             combatScript.Chase(player);
         }
-        // Trường hợp 3: Đã vào trong tầm đánh -> Dừng lại tấn công
+        // Trường hợp 3: Trong tầm đánh -> Dừng lại tấn công
         else
         {
             combatScript.Attack(player);
         }
     }
-
     // Vẽ bán kính tầm đánh trên Scene View để dễ canh chỉnh
     private void OnDrawGizmosSelected()
     {
