@@ -18,26 +18,35 @@ public class CameraLookController : MonoBehaviour
 
     void Update()
     {
-        // Chỉ xoay khi giữ chuột phải
         if (Mouse.current.rightButton.isPressed)
         {
             Vector2 delta = Mouse.current.delta.ReadValue();
 
-            yaw += delta.x * mouseSensitivity * Time.deltaTime * 10f;
-            pitch -= delta.y * mouseSensitivity * Time.deltaTime * 10f;
+            yaw += delta.x * mouseSensitivity;
+            pitch -= delta.y * mouseSensitivity;
             pitch = Mathf.Clamp(pitch, minPitch, maxPitch);
 
             transform.rotation = Quaternion.Euler(pitch, yaw, 0f);
 
-            // Khóa và ẩn con trỏ chuột khi đang kéo
             Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
+            Cursor.visible = true;
         }
         else
         {
-            // Thả chuột phải ra thì hiện con trỏ lại
+            // Ngay khi buông ra: khóa cứng rotation, KHÔNG đọc delta nữa dù có giá trị thừa
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
+            yaw = transform.eulerAngles.y;
+            pitch = transform.eulerAngles.x;
+        }
+    }
+
+    void LateUpdate()
+    {
+        // Đảm bảo transform không bị component khác (như Cinemachine) ghi đè sau Update
+        if (!Mouse.current.rightButton.isPressed)
+        {
+            transform.rotation = Quaternion.Euler(pitch, yaw, 0f);
         }
     }
 }
