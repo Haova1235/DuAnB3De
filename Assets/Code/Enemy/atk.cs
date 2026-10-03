@@ -18,7 +18,7 @@ public class EnemyCombat : MonoBehaviour
 
     public void Chase(Transform target)
     {
-        // Luôn mở khóa di chuyển khi rượt đuổi
+        // BẮT BUỘC: Mở khóa agent ngay lập tức khi chuyển sang rượt đuổi
         agent.isStopped = false;
         agent.speed = chaseSpeed;
         agent.SetDestination(target.position);
@@ -26,10 +26,12 @@ public class EnemyCombat : MonoBehaviour
 
     public void Attack(Transform target)
     {
-        // Dừng lại hoàn toàn khi đang đứng trong tầm đánh để tấn công
-        agent.isStopped = true;
+        // Cài đặt khoảng cách dừng của NavMeshAgent bằng đúng tầm đánh (attackRange) hoặc một khoảng an toàn
+        agent.stoppingDistance = 1.5f; // Bạn có thể chỉnh con số này khớp với bán kính tầm đánh
+        agent.isStopped = false; // Vẫn bật agent để nó tự động căn chỉnh khoảng cách
+        agent.SetDestination(target.position); // Tiến hoặc lùi nhẹ để giữ đúng khoảng cách
 
-        // Xoay mặt mượt mà về phía Player một cách an toàn (tránh lỗi xoay tròn)
+        // Xoay mặt mượt mà về phía Player một cách an toàn
         Vector3 direction = (target.position - transform.position);
         direction.y = 0;
         if (direction.sqrMagnitude > 0.01f)
@@ -38,7 +40,7 @@ public class EnemyCombat : MonoBehaviour
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 5f);
         }
 
-        // Hồi chiêu đòn đánh liên tục theo nhịp
+        // Hồi chiêu đòn đánh
         if (Time.time >= lastAttackTime + attackCooldown)
         {
             lastAttackTime = Time.time;

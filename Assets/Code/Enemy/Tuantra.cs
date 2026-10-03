@@ -3,7 +3,7 @@ using UnityEngine.AI;
 using System.Collections.Generic;
 
 [RequireComponent(typeof(NavMeshAgent))]
-[RequireComponent(typeof(EnemyTrapSpawner))] // Tự động yêu cầu component đặt bẫy
+[RequireComponent(typeof(EnemyTrapSpawner))]
 public class EnemyPatrol : MonoBehaviour
 {
     private NavMeshAgent agent;
@@ -28,11 +28,24 @@ public class EnemyPatrol : MonoBehaviour
         agent.isStopped = false;
         agent.speed = patrolSpeed;
 
-        // Xử lý di chuyển qua lại giữa các Waypoints
-        if (!agent.pathPending && agent.remainingDistance <= agent.stoppingDistance)
+        // KIỂM TRA ĐƯỜNG ĐI THÔNG MINH: Nếu đường đi bị chặn hoàn toàn hoặc không hợp lệ
+        if (agent.pathStatus == NavMeshPathStatus.PathPartial || agent.pathStatus == NavMeshPathStatus.PathInvalid)
         {
+            Debug.LogWarning("Đường đi tuần tra bị chặn hoặc không hợp lệ! Đang chuyển sang waypoint tiếp theo...");
+            // Chuyển hướng sang waypoint kế tiếp để tránh bị kẹt cứng một chỗ
             currentWaypointIndex = (currentWaypointIndex + 1) % waypoints.Count;
             GoToNextWaypoint();
+            return;
+        }
+
+        // Xử lý di chuyển qua lại giữa các Waypoints khi đến đích
+        if (!agent.pathPending && agent.remainingDistance <= agent.stoppingDistance)
+        {
+            if (!agent.hasPath || agent.velocity.sqrMagnitude == 0f)
+            {
+                currentWaypointIndex = (currentWaypointIndex + 1) % waypoints.Count;
+                GoToNextWaypoint();
+            }
         }
 
         // Gọi script đặt bẫy chạy (chỉ khi hàm DoPatrol này được gọi)
