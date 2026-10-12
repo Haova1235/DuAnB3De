@@ -33,36 +33,34 @@ public class PlayerInventory : MonoBehaviour
         Camera mainCam = Camera.main;
         if (mainCam == null) return;
 
-        // Bắn Raycast từ chính giữa tâm màn hình
         Ray ray = mainCam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
 
         if (Physics.Raycast(ray, out RaycastHit hit, interactDistance, interactableLayer))
         {
-            // 1. Ưu tiên kiểm tra nếu đưa tâm chuột trúng Ổ Khóa (Padlock)
-            Padlock padlock = hit.collider.GetComponentInParent<Padlock>();
-            if (padlock != null)
+            // 1. Kiểm tra Ổ khóa (LockBase)
+            LockBase lockObj = hit.collider.GetComponentInParent<LockBase>();
+            if (lockObj != null)
             {
-                padlock.Unlock(this);
+                lockObj.Interact(this);
                 return;
             }
 
-            // 2. Kiểm tra nếu đưa tâm chuột trúng Cánh Cửa (Door)
-            Door door = hit.collider.GetComponentInParent<Door>();
+            // 2. Kiểm tra Cánh Cửa (Tìm linh hoạt hơn ở cả cha và con)
+            Door door = hit.collider.GetComponent<Door>();
+            if (door == null) door = hit.collider.GetComponentInParent<Door>();
+            if (door == null) door = hit.collider.GetComponentInChildren<Door>();
+
             if (door != null)
             {
                 door.Interact(this);
                 return;
             }
 
-            // 3. Kiểm tra nếu đưa tâm chuột trúng Vật phẩm (Item)
+            // 3. Kiểm tra Vật phẩm (Item)
             Item item = hit.collider.GetComponentInParent<Item>();
             if (item != null)
             {
-                // Nếu đang cầm đồ khác thì thả đồ cũ xuống trước
-                if (currentlyHeldItem != null)
-                {
-                    DropItem();
-                }
+                if (currentlyHeldItem != null) DropItem();
 
                 currentlyHeldItem = item;
                 currentlyHeldItem.Pickup(holdPoint);

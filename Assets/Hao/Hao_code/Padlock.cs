@@ -1,17 +1,11 @@
 using UnityEngine;
 
-public class Padlock : MonoBehaviour, IOutlineable
+public class Padlock : LockBase
 {
-    [Header("Lock Settings")]
-    [Tooltip("Mã chìa khóa cần thiết để mở ổ khóa này (ví dụ: Key_MainDoor)")]
-    public string requiredKeyID = "Key_MainDoor";
+    [Header("Padlock Settings")]
+    public string requiredKeyID = "key1";
 
-    [Header("Connected Door")]
-    [Tooltip("Kéo GameObject Cánh cửa chứa script Door vào đây")]
-    public Door linkedDoor;
-
-    [Header("Effects (Optional)")]
-    [SerializeField] private Rigidbody padlockRigidbody; // Nếu muốn ổ khóa rớt xuống sàn khi mở
+    [SerializeField] private Rigidbody padlockRigidbody;
     private ObjectOutline outlineTarget;
 
     private void Awake()
@@ -19,69 +13,55 @@ public class Padlock : MonoBehaviour, IOutlineable
         outlineTarget = GetComponent<ObjectOutline>();
     }
 
-    /// <summary>
-    /// Gọi khi người chơi nhìn vào Ổ khóa và bấm E
-    /// </summary>
-    public void Unlock(PlayerInventory playerInventory)
+    public override void Interact(PlayerInventory playerInventory)
     {
-        if (playerInventory == null) return;
+        // Có thể để trống hoặc giữ lại nếu muốn bấm riêng vào ổ khóa
+    }
 
-        // Lấy Item người chơi đang cầm trên tay
+    // Cửa sẽ gọi hàm này để tự động check chìa trên tay người chơi
+    public override bool TryOpenWithItem(PlayerInventory playerInventory)
+    {
+        if (!isLocked || playerInventory == null) return false;
+
         Item heldItem = playerInventory.GetCurrentlyHeldItem();
 
-        if (heldItem != null)
+        if (heldItem != null && !string.IsNullOrEmpty(heldItem.keyID) && heldItem.keyID == requiredKeyID)
         {
-            // Kiểm tra trực tiếp biến keyID từ script Item.cs
-            if (!string.IsNullOrEmpty(heldItem.keyID) && heldItem.keyID == requiredKeyID)
-            {
-                Debug.Log("Mở ổ khóa thành công!");
+            Debug.Log("Mở khóa Padlock thành công bằng chìa: " + requiredKeyID);
+            isLocked = false;
 
-                // 1. Mở khóa cánh cửa liên kết
-                if (linkedDoor != null)
-                {
-                    linkedDoor.SetLocked(false);
-                }
+            // Xóa chìa khóa trên tay
+            playerInventory.DropItem();
+            Destroy(heldItem.gameObject);
 
-                // 2. Thả và hủy chìa khóa trên tay sau khi sử dụng
-                playerInventory.DropItem();
-                Destroy(heldItem.gameObject);
-
-                // 3. Xử lý hiệu ứng rớt/hủy ổ khóa
-                UnlockEffects();
-            }
-            else
-            {
-                Debug.Log("Sai chìa khóa! Ổ khóa này yêu cầu chìa khóa có ID: " + requiredKeyID);
-            }
+            UnlockEffects();
+            return true; // Đã mở thành công khóa này
         }
-        else
-        {
-            Debug.Log("Bạn cần cầm chìa khóa trên tay mới mở được ổ khóa này!");
-        }
+
+        return false; // Không đúng chìa hoặc tay không có item phù hợp
     }
 
     private void UnlockEffects()
     {
         HideOutline();
-
         if (padlockRigidbody != null)
         {
-            transform.SetParent(null); // Tách khỏi cánh cửa
-            padlockRigidbody.isKinematic = false; // Bật vật lý để rơi xuống đất
-            Destroy(gameObject, 3f); // Xóa ổ khóa sau 3 giây
+            transform.SetParent(null);
+            padlockRigidbody.isKinematic = false;
+            Destroy(gameObject, 3f);
         }
         else
         {
-            Destroy(gameObject); // Biến mất ngay lập tức
+            Destroy(gameObject);
         }
     }
 
-    public void ShowOutline()
+    public override void ShowOutline()
     {
-        if (outlineTarget != null) outlineTarget.ShowOutline();
+        if (isLocked && outlineTarget != null) outlineTarget.ShowOutline();
     }
 
-    public void HideOutline()
+    public override void HideOutline()
     {
         if (outlineTarget != null) outlineTarget.HideOutline();
     }

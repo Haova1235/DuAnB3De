@@ -1,90 +1,97 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class Door : MonoBehaviour
 {
-    [Header("Lock Settings")]
-    [SerializeField] private bool isLocked = false;
+    [Header("Multi-Lock System")]
+    [Tooltip("Kéo tất cả các ổ khóa gắn trên cửa này vào đây (để trống code sẽ tự tìm)")]
+    [SerializeField] private List<LockBase> locksOnDoor = new List<LockBase>();
 
     [Header("Animator Settings")]
     [SerializeField] private Animator doorAnimator;
-    [SerializeField] private string boolParameterName = "isOpen"; // Tên biến Bool bạn đặt trong Animator Controller
+    [SerializeField] private string boolParameterName = "isOpen";
 
     private bool isOpen = false;
 
     private void Awake()
     {
-        // Tự lấy Animator nếu chưa kéo vào Inspector
         if (doorAnimator == null)
-        {
             doorAnimator = GetComponent<Animator>();
+
+        // Tự động tìm tất cả các khóa là con của cửa nếu danh sách trống
+        if (locksOnDoor.Count == 0)
+        {
+            locksOnDoor.AddRange(GetComponentsInChildren<LockBase>());
         }
     }
 
+    public bool CheckIsLocked()
+    {
+        foreach (LockBase lockItem in locksOnDoor)
+        {
+            if (lockItem != null && lockItem.IsLocked)
+            {
+                return true; // Vẫn còn ít nhất 1 khóa chưa mở
+            }
+        }
+        return false; // Đã mở sạch mọi khóa
+    }
+
     /// <summary>
-    /// Gọi khi Player tương tác (E) trực tiếp với Cánh Cửa
+    /// Gọi khi Player bấm E trực tiếp vào Cánh Cửa
     /// </summary>
     public void Interact(PlayerInventory playerInventory)
     {
-        if (isLocked)
+        // 1. Nếu cửa vẫn còn khóa
+        if (CheckIsLocked())
         {
-            if (playerInventory != null && HasCorrectKey(playerInventory))
+            bool openedAnyLock = false;
+
+            // Thử dùng item đang cầm trên tay để mở các khóa trên cửa
+            if (playerInventory != null)
             {
-                Debug.Log("Mở khóa cửa thành công!");
-                isLocked = false;
+                foreach (LockBase lockItem in locksOnDoor)
+                {
+                    if (lockItem != null && lockItem.IsLocked)
+                    {
+                        // Thử mở khóa này bằng item trên tay
+                        if (lockItem.TryOpenWithItem(playerInventory))
+                        {
+                            openedAnyLock = true;
+                            break; // Mở xong 1 khóa trong lượt bấm E này
+                        }
+                    }
+                }
+            }
 
-                // Xóa/vứt chìa khóa trên tay sau khi dùng
-                Item heldItem = playerInventory.GetCurrentlyHeldItem();
-                playerInventory.DropItem();
-                if (heldItem != null) Destroy(heldItem.gameObject);
-
-                ToggleDoor();
+            if (openedAnyLock)
+            {
+                Debug.Log("Đã mở được một ổ khóa trên cửa!");
+                // Nếu sau khi mở mà cửa đã sạch hết khóa thì tự động mở cửa luôn
+                if (!CheckIsLocked())
+                {
+                    ToggleDoor();
+                }
             }
             else
             {
-                Debug.Log("Cửa đang bị khóa!");
+                Debug.Log("Cửa đang bị khóa và bạn không có chìa khóa phù hợp cho các ổ khóa còn lại!");
             }
         }
+        // 2. Nếu cửa đã sạch khóa hoàn toàn
         else
         {
             ToggleDoor();
         }
     }
 
-    private bool HasCorrectKey(PlayerInventory playerInventory)
-    {
-        Item heldItem = playerInventory.GetCurrentlyHeldItem();
-        if (heldItem == null) return false;
-
-        // Đọc trực tiếp keyID trên Item
-        Padlock padlock = GetComponentInChildren<Padlock>();
-        string requiredID = padlock != null ? padlock.requiredKeyID : "";
-
-        if (!string.IsNullOrEmpty(heldItem.keyID) && heldItem.keyID == requiredID)
-        {
-            return true;
-        }
-
-        return false;
-    }
-
     public void ToggleDoor()
     {
         isOpen = !isOpen;
 
-        // Kích hoạt Animation mở/đóng thông qua Animator Parameter
         if (doorAnimator != null)
         {
             doorAnimator.SetBool(boolParameterName, isOpen);
         }
-    }
-
-    public void SetLocked(bool lockedState)
-    {
-        isLocked = lockedState;
-    }
-
-    public bool IsLocked()
-    {
-        return isLocked;
     }
 }
