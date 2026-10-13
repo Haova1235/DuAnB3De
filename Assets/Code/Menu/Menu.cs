@@ -12,6 +12,9 @@ public class MainMenuController : MonoBehaviour
     public Slider brightnessSlider;       // Kéo BrightnessSlider vào đây
     public Image brightnessOverlay;       // Kéo Panel đen chỉnh độ sáng vào đây
 
+    [Header("Menu Buttons")]
+    public Button quitButton;             // Kéo nút Quit từ Prefab Settings vào đây
+
     void Start()
     {
         // Tải lại các cài đặt đã lưu trước đó để đồng bộ
@@ -30,6 +33,12 @@ public class MainMenuController : MonoBehaviour
         if (brightnessSlider != null)
         {
             brightnessSlider.onValueChanged.AddListener(SetBrightness);
+        }
+
+        // Tự động gán sự kiện cho nút Quit trong bảng Setting
+        if (quitButton != null)
+        {
+            quitButton.onClick.AddListener(QuitGame);
         }
     }
 
@@ -104,9 +113,11 @@ public class MainMenuController : MonoBehaviour
     public void QuitGame()
     {
         Debug.Log("Đã thoát game!");
-        Application.Quit();
+
 #if UNITY_EDITOR
-        UnityEditor.EditorApplication.isPlaying = false;
+        UnityEditor.EditorApplication.isPlaying = false; // Tắt chế độ Play khi test trong Unity Editor
+#else
+            Application.Quit(); // Thoát hẳn game khi đã build file chạy thực tế
 #endif
     }
 }

@@ -813,6 +813,7 @@ MonoBehaviour:
   volumeSlider: {fileID: 1832495853}
   brightnessSlider: {fileID: 0}
   brightnessOverlay: {fileID: 0}
+  quitButton: {fileID: 1289942196}
 --- !u!4 &834930178
 Transform:
   m_ObjectHideFlags: 0
@@ -1120,6 +1121,17 @@ MonoBehaviour:
   m_ShadowLayerMask: 1
   m_RenderingLayers: 1
   m_ShadowRenderingLayers: 1
+--- !u!114 &1289942196 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5726656228499458664, guid: 258ba06a9954d8d4db5a9c192e140296, type: 3}
+  m_PrefabInstance: {fileID: 5817947387459403776}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
 --- !u!1 &1452627291
 GameObject:
   m_ObjectHideFlags: 0
@@ -2040,10 +2052,34 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 572368546}
     m_Modifications:
+    - target: {fileID: 2788253727848406461, guid: 258ba06a9954d8d4db5a9c192e140296, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2788253727848406461, guid: 258ba06a9954d8d4db5a9c192e140296, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3390708577242287524, guid: 258ba06a9954d8d4db5a9c192e140296, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
       objectReference: {fileID: 834930177}
+    - target: {fileID: 3390708577242287524, guid: 258ba06a9954d8d4db5a9c192e140296, type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: CloseSettings
+      objectReference: {fileID: 0}
+    - target: {fileID: 7837735713366149598, guid: 258ba06a9954d8d4db5a9c192e140296, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7837735713366149598, guid: 258ba06a9954d8d4db5a9c192e140296, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7837735713366149598, guid: 258ba06a9954d8d4db5a9c192e140296, type: 3}
+      propertyPath: m_AnchorMin.x
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 8928567158775076347, guid: 258ba06a9954d8d4db5a9c192e140296, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
@@ -2127,6 +2163,10 @@ PrefabInstance:
     - target: {fileID: 9120009924190606121, guid: 258ba06a9954d8d4db5a9c192e140296, type: 3}
       propertyPath: m_Name
       value: SettingPanel
+      objectReference: {fileID: 0}
+    - target: {fileID: 9120009924190606121, guid: 258ba06a9954d8d4db5a9c192e140296, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
