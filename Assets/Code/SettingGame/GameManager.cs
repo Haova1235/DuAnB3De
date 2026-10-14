@@ -94,6 +94,9 @@ public class GameManager : MonoBehaviour
     public void SetVolume(float volume)
     {
         AudioListener.volume = volume;
+        // Lưu ngay giá trị âm thanh vào PlayerPrefs để đồng bộ qua lại giữa Map và Menu
+        PlayerPrefs.SetFloat("MasterVolume", volume);
+        PlayerPrefs.Save();
     }
 
     public void SetBrightness(float brightness)
