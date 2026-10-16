@@ -1,22 +1,32 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
-using UnityEngine.InputSystem; // Sử dụng hệ thống Input mới
+using UnityEngine.InputSystem;
 
 public class GameManager : MonoBehaviour
 {
-    [Header("UI Panels & Overlays")]
-    public GameObject pauseSettingsPanel;  // Kéo SettingsPanel vào đây
-    public Image brightnessOverlay;          // Kéo BrightnessOverlay vào đây (nếu có)
+    [Header("UI Panels")]
+    public GameObject pausePanel;         // Kéo PausePanel vào đây
+    public GameObject settingsPanel;      // Kéo SettingPanel vào đây
+    public GameObject mapFullBackground; // Tấm hình nền full màn hình che map
 
-    [Header("Settings Sliders")]
-    public Slider volumeSlider;              // Kéo VolumeSlider vào đây
-    public Slider brightnessSlider;          // Kéo BrightnessSlider vào đây (nếu có)
+    [Header("In-Game HUD Buttons")]
+    public GameObject pauseButton;       // Kéo nút mở Menu tạm dừng trên màn hình (ví dụ SettingButton)
 
-    [Header("Prefab Buttons & Scene Management")]
-    public Button menuButton;                // Kéo nút Về Menu từ Prefab vào đây
-    public Button quitButton;                // Kéo nút Thoát Game từ Prefab vào đây
-    public string menuSceneName = "Menu";    // Điền chính xác tên Scene Menu chính của bạn vào đây
+    [Header("Settings Components")]
+    public Slider volumeSlider;
+    public Slider brightnessSlider;
+    public Image brightnessOverlay;
+
+    [Header("Pause Panel Buttons")]
+    public Button resumeButton;          // Kéo nút Resume
+    public Button openSettingsButton;    // Kéo nút mở Setting từ PausePanel
+    public Button closeSettingsButton;   // Kéo nút đóng Setting (nút Back/Close)
+    public Button menuButton;            // Kéo nút Về Menu
+    public Button quitButton;            // Kéo nút Thoát Game
+
+    [Header("Scene Settings")]
+    public string menuSceneName = "Menu"; // Tên Scene Menu chính
 
     private bool isPaused = false;
 
@@ -24,42 +34,41 @@ public class GameManager : MonoBehaviour
     {
         LoadSettings();
 
-        // Ép buộc ẩn bảng cài đặt ngay khi vào game
-        if (pauseSettingsPanel != null)
-        {
-            pauseSettingsPanel.SetActive(false);
-        }
+        // Mặc định lúc vào map: Hiện nút trên màn hình, ẩn các bảng menu và hình nền
+        if (pauseButton != null) pauseButton.SetActive(true);
+        if (pausePanel != null) pausePanel.SetActive(false);
+        if (settingsPanel != null) settingsPanel.SetActive(false);
+        if (mapFullBackground != null) mapFullBackground.SetActive(false);
 
-        if (volumeSlider != null)
-        {
-            volumeSlider.onValueChanged.AddListener(SetVolume);
-        }
+        Time.timeScale = 1f;
 
-        if (brightnessSlider != null)
-        {
-            brightnessSlider.onValueChanged.AddListener(SetBrightness);
-        }
+        // Đăng ký sự kiện cho Slider
+        if (volumeSlider != null) volumeSlider.onValueChanged.AddListener(SetVolume);
+        if (brightnessSlider != null) brightnessSlider.onValueChanged.AddListener(SetBrightness);
 
-        // Tự động gán sự kiện cho nút Về Menu và Thoát Game
-        if (menuButton != null)
-        {
-            menuButton.onClick.AddListener(() => ReturnToMainMenu(menuSceneName));
-        }
-
-        if (quitButton != null)
-        {
-            quitButton.onClick.AddListener(QuitGame);
-        }
+        // Đăng ký sự kiện cho các nút bấm
+        if (resumeButton != null) resumeButton.onClick.AddListener(ResumeGame);
+        if (openSettingsButton != null) openSettingsButton.onClick.AddListener(OpenSettings);
+        if (closeSettingsButton != null) closeSettingsButton.onClick.AddListener(CloseSettings);
+        if (menuButton != null) menuButton.onClick.AddListener(() => ReturnToMainMenu(menuSceneName));
+        if (quitButton != null) quitButton.onClick.AddListener(QuitGame);
     }
 
     void Update()
     {
-        // Bấm phím ESC để bật/tắt bảng cài đặt bằng New Input System
+        // Bấm ESC để bật/tắt bảng Tạm Dừng
         if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
         {
             if (isPaused)
             {
-                ResumeGame();
+                if (settingsPanel != null && settingsPanel.activeSelf)
+                {
+                    CloseSettings();
+                }
+                else
+                {
+                    ResumeGame();
+                }
             }
             else
             {
@@ -71,30 +80,51 @@ public class GameManager : MonoBehaviour
     public void PauseGame()
     {
         isPaused = true;
-        if (pauseSettingsPanel != null)
-        {
-            pauseSettingsPanel.SetActive(true);
-        }
-        Time.timeScale = 0f; // Dừng game
-        Cursor.visible = true; // Hiện con trỏ chuột
+        if (pauseButton != null) pauseButton.SetActive(false); // Ẩn nút tạm dừng trên màn hình
+        if (pausePanel != null) pausePanel.SetActive(true);
+        if (settingsPanel != null) settingsPanel.SetActive(false);
+
+        Time.timeScale = 0f; // Dừng thời gian game
+        Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
     }
 
     public void ResumeGame()
     {
         isPaused = false;
-        if (pauseSettingsPanel != null)
-        {
-            pauseSettingsPanel.SetActive(false);
-        }
+        if (pausePanel != null) pausePanel.SetActive(false);
+        if (settingsPanel != null) settingsPanel.SetActive(false);
+        if (mapFullBackground != null) mapFullBackground.SetActive(false); // Tắt hình nền che map
+        if (pauseButton != null) pauseButton.SetActive(true); // Hiện lại nút tạm dừng trên màn hình
+
         Time.timeScale = 1f; // Tiếp tục game
+        SaveSettings();
+    }
+
+    public void OpenSettings()
+    {
+        if (pausePanel != null) pausePanel.SetActive(false);     // Tạm ẩn bảng Pause
+        if (settingsPanel != null) settingsPanel.SetActive(true); // Hiển thị bảng Setting
+        if (mapFullBackground != null) mapFullBackground.SetActive(true); // Bật hình nền che map
+    }
+
+    public void CloseSettings()
+    {
+        if (settingsPanel != null) settingsPanel.SetActive(false); // Tắt bảng Setting
+        if (mapFullBackground != null) mapFullBackground.SetActive(false); // Tắt hình nền che map (đã sửa thành false)
+
+        // Nếu game đang trong trạng thái dừng (pause), hiện lại bảng Pause
+        if (isPaused && pausePanel != null)
+        {
+            pausePanel.SetActive(true);
+        }
+
         SaveSettings();
     }
 
     public void SetVolume(float volume)
     {
         AudioListener.volume = volume;
-        // Lưu ngay giá trị âm thanh vào PlayerPrefs để đồng bộ qua lại giữa Map và Menu
         PlayerPrefs.SetFloat("MasterVolume", volume);
         PlayerPrefs.Save();
     }
@@ -111,14 +141,8 @@ public class GameManager : MonoBehaviour
 
     void SaveSettings()
     {
-        if (volumeSlider != null)
-        {
-            PlayerPrefs.SetFloat("MasterVolume", volumeSlider.value);
-        }
-        if (brightnessSlider != null)
-        {
-            PlayerPrefs.SetFloat("Brightness", brightnessSlider.value);
-        }
+        if (volumeSlider != null) PlayerPrefs.SetFloat("MasterVolume", volumeSlider.value);
+        if (brightnessSlider != null) PlayerPrefs.SetFloat("Brightness", brightnessSlider.value);
         PlayerPrefs.Save();
     }
 
@@ -126,10 +150,7 @@ public class GameManager : MonoBehaviour
     {
         float savedVolume = PlayerPrefs.GetFloat("MasterVolume", 1f);
         AudioListener.volume = savedVolume;
-        if (volumeSlider != null)
-        {
-            volumeSlider.value = savedVolume;
-        }
+        if (volumeSlider != null) volumeSlider.value = savedVolume;
 
         float savedBrightness = PlayerPrefs.GetFloat("Brightness", 0.5f);
         if (brightnessSlider != null)
@@ -147,13 +168,12 @@ public class GameManager : MonoBehaviour
 
     public void QuitGame()
     {
-        Time.timeScale = 1f; // Bắt buộc đưa thời gian về bình thường trước khi thoát
+        Time.timeScale = 1f;
         Debug.Log("Đang thoát game...");
-
 #if UNITY_EDITOR
-        UnityEditor.EditorApplication.isPlaying = false; // Dừng chế độ Play ngay lập tức khi test trong Unity Editor
+        UnityEditor.EditorApplication.isPlaying = false;
 #else
-        Application.Quit(); // Thoát hẳn game khi đã build file .exe
+        Application.Quit();
 #endif
     }
 }
