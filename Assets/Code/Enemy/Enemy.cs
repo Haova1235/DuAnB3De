@@ -13,6 +13,9 @@ public class EnemyController : MonoBehaviour
     [Header("Tầm nhìn & Tương tác")]
     [SerializeField] private float attackRange = 2f; // Khoảng cách dừng lại để đánh
 
+    private Vector3 lastKnownPlayerPosition;
+    private bool hasRecordedLastPosition = false;
+
     void Start()
     {
         // Lấy các component đã được gắn trên Enemy
@@ -39,24 +42,44 @@ public class EnemyController : MonoBehaviour
         bool canSeePlayer = viewScript.CanSeePlayer();
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
 
-        // Trường hợp 1: Không thấy Player -> Tiếp tục đi tuần
-        if (!canSeePlayer)
+        if (canSeePlayer)
         {
-            // Bắt buộc gọi StopCombat để mở khóa agent.isStopped trước khi cho tuần tra
-            combatScript.StopCombat();
-            patrolScript.DoPatrol();
+            // Khi nhìn thấy Player, liên tục lưu lại vị trí hiện tại của họ
+            lastKnownPlayerPosition = player.position;
+            hasRecordedLastPosition = true;
+
+            if (distanceToPlayer > attackRange)
+            {
+                combatScript.Chase(player);
+            }
+            else
+            {
+                combatScript.Attack(player);
+            }
         }
-        // Trường hợp 2: Thấy nhưng ngoài tầm đánh -> Rượt đuổi
-        else if (distanceToPlayer > attackRange)
-        {
-            combatScript.Chase(player);
-        }
-        // Trường hợp 3: Trong tầm đánh -> Dừng lại tấn công
         else
         {
-            combatScript.Attack(player);
+            // Nếu đang trong quá trình chạy đến điểm cuối hoặc đứng quét 5 giây, giữ nguyên trạng thái
+            if (combatScript.isSearching) return;
+
+            // Nếu vừa mất dấu và có ghi nhận vị trí cuối cùng
+            if (hasRecordedLastPosition)
+            {
+                hasRecordedLastPosition = false; // Đảm bảo chỉ kích hoạt sự kiện này 1 lần duy nhất khi vừa mất dấu
+
+                // Gọi hành động: Chạy đến điểm cuối -> Quét 5 giây -> Hết 5 giây không thấy sẽ gọi callback quay lại tuần tra ngẫu nhiên
+                combatScript.HandleLostPlayer(lastKnownPlayerPosition, () => {
+                    patrolScript.DoPatrol();
+                });
+            }
+            else
+            {
+                // Mặc định tiếp tục tìm đường tuần tra ngẫu nhiên trên NavMesh
+                patrolScript.DoPatrol();
+            }
         }
     }
+
     // Vẽ bán kính tầm đánh trên Scene View để dễ canh chỉnh
     private void OnDrawGizmosSelected()
     {

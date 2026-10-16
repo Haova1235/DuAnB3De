@@ -1,6 +1,5 @@
 ﻿using UnityEngine;
 using UnityEngine.AI;
-using System.Collections.Generic;
 
 [RequireComponent(typeof(NavMeshAgent))]
 [RequireComponent(typeof(EnemyTrapSpawner))]
@@ -9,55 +8,72 @@ public class EnemyPatrol : MonoBehaviour
     private NavMeshAgent agent;
     private EnemyTrapSpawner trapSpawner;
 
-    [Header("Cài đặt Tuần tra")]
-    [SerializeField] private List<Transform> waypoints;
+    [Header("Cài đặt Tuần tra ngẫu nhiên")]
     [SerializeField] private float patrolSpeed = 3.5f;
-    private int currentWaypointIndex = 0;
+
+    [Tooltip("Tầm quét riêng biệt để chọn vị trí ngẫu nhiên cho Enemy")]
+    [SerializeField] private float randomSearchRadius = 10f; // Bán kính vòng tròn quét điểm ngẫu nhiên
+
+    private Vector3 currentRandomDestination;
+    private bool hasDestination = false;
 
     void Start()
     {
         agent = GetComponent<NavMeshAgent>();
         trapSpawner = GetComponent<EnemyTrapSpawner>();
-        GoToNextWaypoint();
+        SetNewRandomDestination();
     }
 
     public void DoPatrol()
     {
-        if (waypoints == null || waypoints.Count == 0) return;
-
         agent.isStopped = false;
         agent.speed = patrolSpeed;
 
-        // KIỂM TRA ĐƯỜNG ĐI THÔNG MINH: Nếu đường đi bị chặn hoàn toàn hoặc không hợp lệ
-        if (agent.pathStatus == NavMeshPathStatus.PathPartial || agent.pathStatus == NavMeshPathStatus.PathInvalid)
+        // Nếu chưa có điểm đến hoặc đã tới điểm ngẫu nhiên (hoặc đường đi bị lỗi/chặn)
+        if (!hasDestination || (!agent.pathPending && (agent.remainingDistance <= agent.stoppingDistance || agent.pathStatus == NavMeshPathStatus.PathInvalid)))
         {
-            Debug.LogWarning("Đường đi tuần tra bị chặn hoặc không hợp lệ! Đang chuyển sang waypoint tiếp theo...");
-            // Chuyển hướng sang waypoint kế tiếp để tránh bị kẹt cứng một chỗ
-            currentWaypointIndex = (currentWaypointIndex + 1) % waypoints.Count;
-            GoToNextWaypoint();
-            return;
+            SetNewRandomDestination();
         }
 
-        // Xử lý di chuyển qua lại giữa các Waypoints khi đến đích
-        if (!agent.pathPending && agent.remainingDistance <= agent.stoppingDistance)
-        {
-            if (!agent.hasPath || agent.velocity.sqrMagnitude == 0f)
-            {
-                currentWaypointIndex = (currentWaypointIndex + 1) % waypoints.Count;
-                GoToNextWaypoint();
-            }
-        }
-
-        // Gọi script đặt bẫy chạy (chỉ khi hàm DoPatrol này được gọi)
+        // Gọi script đặt bẫy hoạt động khi tuần tra
         if (trapSpawner != null)
         {
             trapSpawner.TickTrapTimer();
         }
     }
 
-    void GoToNextWaypoint()
+    // Hàm quét chọn vị trí ngẫu nhiên trong bán kính randomSearchRadius độc lập
+    public void SetNewRandomDestination()
     {
-        if (waypoints.Count == 0) return;
-        agent.SetDestination(waypoints[currentWaypointIndex].position);
+        // Tạo một điểm ngẫu nhiên nằm trong hình cầu/vòng tròn bán kính randomSearchRadius quanh vị trí Enemy
+        Vector3 randomPoint = transform.position + Random.insideUnitSphere * randomSearchRadius;
+
+        NavMeshHit hit;
+        // Kiểm tra xem điểm ngẫu nhiên đó có nằm trên mặt phẳng NavMesh đã Bake hay không
+        if (NavMesh.SamplePosition(randomPoint, out hit, randomSearchRadius, NavMesh.AllAreas))
+        {
+            currentRandomDestination = hit.position;
+            agent.SetDestination(currentRandomDestination);
+            hasDestination = true;
+        }
+        else
+        {
+            hasDestination = false; // Nếu chọn trúng góc không Bake được, lượt sau sẽ thử chọn lại
+        }
+    }
+
+    // Vẽ tầm quét vị trí ngẫu nhiên bằng màu xanh lam (Cyan) trên cửa sổ Scene View để dễ canh chỉnh
+    private void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawWireSphere(transform.position, randomSearchRadius);
+
+        // Vẽ thêm vị trí mục tiêu ngẫu nhiên hiện tại (nếu có)
+        if (hasDestination)
+        {
+            Gizmos.color = Color.green;
+            Gizmos.DrawSphere(currentRandomDestination, 0.3f);
+            Gizmos.DrawLine(transform.position, currentRandomDestination);
+        }
     }
 }
