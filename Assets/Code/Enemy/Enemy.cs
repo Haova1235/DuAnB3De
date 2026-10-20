@@ -10,9 +10,6 @@ public class EnemyController : MonoBehaviour
     private EnemyCombat combatScript;
     private EnemyView viewScript;
 
-    [Header("Tầm nhìn & Tương tác")]
-    [SerializeField] private float attackRange = 2f; // Khoảng cách dừng lại để đánh
-
     private Vector3 lastKnownPlayerPosition;
     private bool hasRecordedLastPosition = false;
 
@@ -42,13 +39,16 @@ public class EnemyController : MonoBehaviour
         bool canSeePlayer = viewScript.CanSeePlayer();
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
 
+        // Lấy giá trị attackRange trực tiếp từ component EnemyCombat để đồng bộ
+        float currentAttackRange = combatScript.GetAttackRange();
+
         if (canSeePlayer)
         {
             // Khi nhìn thấy Player, liên tục lưu lại vị trí hiện tại của họ
             lastKnownPlayerPosition = player.position;
             hasRecordedLastPosition = true;
 
-            if (distanceToPlayer > attackRange)
+            if (distanceToPlayer > currentAttackRange)
             {
                 combatScript.Chase(player);
             }
@@ -80,10 +80,27 @@ public class EnemyController : MonoBehaviour
         }
     }
 
-    // Vẽ bán kính tầm đánh trên Scene View để dễ canh chỉnh
+    // Vẽ trực quan tầm đánh hình chữ V (hình quạt) trên Scene View dựa theo thông số của EnemyCombat
     private void OnDrawGizmosSelected()
     {
+        EnemyCombat combat = GetComponent<EnemyCombat>();
+        float range = combat != null ? combat.GetAttackRange() : 2.71f;
+        float angle = combat != null ? combat.GetAttackAngle() : 90f;
+
+        // 1. Vẽ vòng tròn bán kính tầm đánh
         Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(transform.position, attackRange);
+        Gizmos.DrawWireSphere(transform.position, range);
+
+        // 2. Vẽ hai đường biên tạo thành hình chữ V trước mặt
+        Vector3 forward = transform.forward;
+        Quaternion leftRayRotation = Quaternion.Euler(0, -angle / 2f, 0);
+        Quaternion rightRayRotation = Quaternion.Euler(0, angle / 2f, 0);
+
+        Vector3 leftRayDir = leftRayRotation * forward;
+        Vector3 rightRayDir = rightRayRotation * forward;
+
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawRay(transform.position, leftRayDir * range);
+        Gizmos.DrawRay(transform.position, rightRayDir * range);
     }
 }

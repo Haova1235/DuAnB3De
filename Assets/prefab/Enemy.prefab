@@ -168,7 +168,7 @@ Rigidbody:
   m_UseGravity: 1
   m_IsKinematic: 0
   m_Interpolate: 0
-  m_Constraints: 72
+  m_Constraints: 120
   m_CollisionDetection: 0
 --- !u!114 &7728669143226315159
 MonoBehaviour:
@@ -182,7 +182,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f0dc88db91bff854b9f71681aff1391d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
-  attackRange: 2
+  attackRange: 2.61
 --- !u!114 &5126161154190784975
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -210,8 +210,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyCombat
   chaseSpeed: 6
-  attackRange: 2
-  attackCooldown: 1.5
+  attackRange: 2.5
+  attackAngle: 170
+  attackCooldown: 3
   isSearching: 0
 --- !u!114 &979650640251708103
 MonoBehaviour:

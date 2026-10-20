@@ -3260,7 +3260,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 979650640251708103, guid: 86812bc7d3f56774cbe2cccb4dd5fc6c, type: 3}
       propertyPath: visionRadius
-      value: 20
+      value: 21
       objectReference: {fileID: 0}
     - target: {fileID: 2193320738848774083, guid: 86812bc7d3f56774cbe2cccb4dd5fc6c, type: 3}
       propertyPath: m_LocalPosition.x
@@ -3317,6 +3317,26 @@ PrefabInstance:
     - target: {fileID: 5962193284332203540, guid: 86812bc7d3f56774cbe2cccb4dd5fc6c, type: 3}
       propertyPath: m_LocalPosition.x
       value: 10.37
+      objectReference: {fileID: 0}
+    - target: {fileID: 7397341427520372190, guid: 86812bc7d3f56774cbe2cccb4dd5fc6c, type: 3}
+      propertyPath: chaseSpeed
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 7397341427520372190, guid: 86812bc7d3f56774cbe2cccb4dd5fc6c, type: 3}
+      propertyPath: attackAngle
+      value: 170
+      objectReference: {fileID: 0}
+    - target: {fileID: 7397341427520372190, guid: 86812bc7d3f56774cbe2cccb4dd5fc6c, type: 3}
+      propertyPath: attackRange
+      value: 2.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 7397341427520372190, guid: 86812bc7d3f56774cbe2cccb4dd5fc6c, type: 3}
+      propertyPath: attackRadius
+      value: 3.4
+      objectReference: {fileID: 0}
+    - target: {fileID: 7397341427520372190, guid: 86812bc7d3f56774cbe2cccb4dd5fc6c, type: 3}
+      propertyPath: attackCooldown
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 7728669143226315159, guid: 86812bc7d3f56774cbe2cccb4dd5fc6c, type: 3}
       propertyPath: attackRange
