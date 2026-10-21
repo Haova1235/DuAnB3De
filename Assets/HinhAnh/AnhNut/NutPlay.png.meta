@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: eb8f0a6fc1625144fbf3773c5b13dfd2
+guid: 7fb6f79fa60efec4184d4e86a1cf9539
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 6194237872147809408
-    second: Setting_0
+      213: 5848736857123960412
+    second: NutPlay_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -73,7 +73,7 @@ TextureImporter:
   - serializedVersion: 4
     buildTarget: DefaultTexturePlatform
     maxTextureSize: 2048
-    resizeAlgorithm: 0
+    resizeAlgorithm: 1
     textureFormat: -1
     textureCompression: 0
     compressionQuality: 50
@@ -100,7 +100,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Setting_0
+      name: NutPlay_0
       rect:
         serializedVersion: 2
         x: 0
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 08444a7b68a56f550800000000000000
-      internalID: 6194237872147809408
+      spriteID: c56bb910f23ea2150800000000000000
+      internalID: 5848736857123960412
       vertices: []
       indices: 
       edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Setting_0: 6194237872147809408
+      NutPlay_0: 5848736857123960412
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
