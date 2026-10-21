@@ -18,7 +18,6 @@ public class Door : MonoBehaviour
         if (doorAnimator == null)
             doorAnimator = GetComponent<Animator>();
 
-        // Tự động tìm tất cả các khóa là con của cửa nếu danh sách trống
         if (locksOnDoor.Count == 0)
         {
             locksOnDoor.AddRange(GetComponentsInChildren<LockBase>());
@@ -31,34 +30,32 @@ public class Door : MonoBehaviour
         {
             if (lockItem != null && lockItem.IsLocked)
             {
-                return true; // Vẫn còn ít nhất 1 khóa chưa mở
+                return true; // Vẫn còn ổ khóa chưa mở
             }
         }
-        return false; // Đã mở sạch mọi khóa
+        return false; // Đã sạch mọi ổ khóa
     }
 
     /// <summary>
-    /// Gọi khi Player bấm E trực tiếp vào Cánh Cửa
+    /// Hàm chính khi Player nhấn/giữ phím F vào Cánh Cửa
     /// </summary>
     public void Interact(PlayerInventory playerInventory)
     {
-        // 1. Nếu cửa vẫn còn khóa
+        // 1. NẾU CỬA CÒN KHÓA
         if (CheckIsLocked())
         {
             bool openedAnyLock = false;
 
-            // Thử dùng item đang cầm trên tay để mở các khóa trên cửa
             if (playerInventory != null)
             {
                 foreach (LockBase lockItem in locksOnDoor)
                 {
                     if (lockItem != null && lockItem.IsLocked)
                     {
-                        // Thử mở khóa này bằng item trên tay
                         if (lockItem.TryOpenWithItem(playerInventory))
                         {
                             openedAnyLock = true;
-                            break; // Mở xong 1 khóa trong lượt bấm E này
+                            break;
                         }
                     }
                 }
@@ -66,8 +63,9 @@ public class Door : MonoBehaviour
 
             if (openedAnyLock)
             {
-                Debug.Log("Đã mở được một ổ khóa trên cửa!");
-                // Nếu sau khi mở mà cửa đã sạch hết khóa thì tự động mở cửa luôn
+                Debug.Log("Đã mở được 1 ổ khóa trên cửa!");
+
+                // Nếu đây là ổ khóa cuối cùng được mở -> Tự động xoay mở cửa luôn!
                 if (!CheckIsLocked())
                 {
                     ToggleDoor();
@@ -75,10 +73,10 @@ public class Door : MonoBehaviour
             }
             else
             {
-                Debug.Log("Cửa đang bị khóa và bạn không có chìa khóa phù hợp cho các ổ khóa còn lại!");
+                Debug.Log("Cửa đang bị khóa và bạn không có chìa khóa phù hợp!");
             }
         }
-        // 2. Nếu cửa đã sạch khóa hoàn toàn
+        // 2. NẾU CỬA ĐÃ SẠCH KHÓA (HOẶC CỬA KHÔNG CÓ KHÓA)
         else
         {
             ToggleDoor();

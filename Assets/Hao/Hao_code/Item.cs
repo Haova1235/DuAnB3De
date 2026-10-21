@@ -7,17 +7,18 @@ public class Item : MonoBehaviour, IOutlineable
     public string itemName = "Key";
     public string keyID;
 
+    [Header("Throw Settings")]
+    [Tooltip("Lực ném/thả của riêng item này (vd: chìa khóa 2, cục đá 10)")]
+    public float throwForce = 5f;
+
     private Rigidbody rb;
     private Collider itemCollider;
-    // Thay OutlineTarget thành ObjectOutline
     private ObjectOutline outlineTarget;
 
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
         itemCollider = GetComponent<Collider>();
-
-        // Sửa chỗ này luôn
         outlineTarget = GetComponent<ObjectOutline>();
     }
 
@@ -37,16 +38,19 @@ public class Item : MonoBehaviour, IOutlineable
         transform.localRotation = Quaternion.identity;
     }
 
-    // Gọi khi thả đồ xuống đất
-    public void Drop(Vector3 dropForce)
+    // Gọi khi thả/ném đồ xuống đất
+    public void Drop(Vector3 direction)
     {
         // Bật lại parent và physic
         transform.SetParent(null);
         rb.isKinematic = false;
         itemCollider.enabled = true;
 
-        // Đẩy nhẹ item về phía trước khi thả
-        rb.AddForce(dropForce, ForceMode.Impulse);
+        // Đẩy item đi dựa vào hướng và nhân với chỉ số lực ném riêng của item đó
+        if (rb != null)
+        {
+            rb.AddForce(direction * throwForce, ForceMode.Impulse);
+        }
     }
 
     public void ShowOutline()
