@@ -4,7 +4,7 @@
 PlayerSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 28
-  productGUID: 737c134377b129a45bf259b4e6e149df
+  productGUID: 8d0ca189874a9d342bd09930babee5e6
   AndroidProfiler: 0
   AndroidFilterTouchesWhenObscured: 0
   AndroidEnableSustainedPerformanceMode: 0
@@ -13,7 +13,7 @@ PlayerSettings:
   useOnDemandResources: 0
   accelerometerFrequency: 60
   companyName: DefaultCompany
-  productName: DuAn3D
+  productName: DUANXUONG
   defaultCursor: {fileID: 0}
   cursorHotspot: {x: 0, y: 0}
   m_SplashScreenBackgroundColor: {r: 0.13725491, g: 0.12156863, b: 0.1254902, a: 1}
@@ -850,14 +850,14 @@ PlayerSettings:
   editorAssembliesCompatibilityLevel: 1
   m_RenderingPath: 1
   m_MobileRenderingPath: 1
-  metroPackageName: DuAn3D
+  metroPackageName: DUANXUONG
   metroPackageVersion: 
   metroCertificatePath: 
   metroCertificatePassword: 
   metroCertificateSubject: 
   metroCertificateIssuer: 
   metroCertificateNotAfter: 0000000000000000
-  metroApplicationDescription: DuAn3D
+  metroApplicationDescription: DUANXUONG
   wsaImages: {}
   metroTileShortName: 
   metroTileShowName: 0
@@ -926,13 +926,13 @@ PlayerSettings:
   qnxGraphicConfPath: 
   apiCompatibilityLevel: 6
   captureStartupLogs: {}
-  activeInputHandler: 1
+  activeInputHandler: 2
   windowsGamepadBackendHint: 0
-  cloudProjectId: f0d15a10-0f79-4f38-91a4-38cda856501c
+  cloudProjectId: e161251f-10c8-4906-a593-9d59f0389d94
   framebufferDepthMemorylessMode: 0
   qualitySettingsNames: []
-  projectName: DuAn3D
-  organizationId: buithanhhaonew
+  projectName: DUANXUONG
+  organizationId: thinhnttc00594
   cloudEnabled: 0
   legacyClampBlendShapeWeights: 0
   hmiLoadingImage: {fileID: 0}
