@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 6205341814238602726}
   - component: {fileID: 7246463492417578313}
   - component: {fileID: 2282020889944466734}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Camera_Item
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -155,4 +155,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlaceableCamera
   itemName: Cam
   keyID: 
-  securityCameraPrefab: {fileID: 7303146360406383565, guid: 44017cce24e1cbc4c819a47fbae5bff3, type: 3}
+  throwForce: 5
+  securityCameraPrefab: {fileID: 3909510226305031525, guid: 048d8dc3c2b95424990c0d68d533b674, type: 3}

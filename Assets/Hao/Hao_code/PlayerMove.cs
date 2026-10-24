@@ -6,12 +6,14 @@ public class PlayerMove : MonoBehaviour
     public InputActionAsset InputActions;
     public CharacterController playerCharacterController;
 
+    [Header("References")]
     [SerializeField] private Transform playerCamera;
+    [SerializeField] private Animator playerAnimator;
 
     private InputAction playerMoveAction;
     private InputAction playerJumpAction;
     private InputAction playerLookAction;
-    private InputAction playerCrouchAction; // Thêm Action Crouch
+    private InputAction playerCrouchAction;
 
     private Vector2 playerMoveAmount;
     private Vector2 playerLookAmount;
@@ -38,6 +40,22 @@ public class PlayerMove : MonoBehaviour
     private bool isCrouching = false;
     private float currentSpeed;
 
+    // --- BIẾN QUẢN LÝ TRẠNG THÁI BỊ BẪY ---
+    private bool isTrapped = false;
+    private float trappedSpeedMultiplier = 1.0f;
+
+    public float moveSpeed
+    {
+        get => currentSpeed;
+        set => currentSpeed = value;
+    }
+
+    public void ApplyTrapEffect(float multiplier, bool trapped)
+    {
+        isTrapped = trapped;
+        trappedSpeedMultiplier = multiplier;
+    }
+
     private void OnEnable()
     {
         InputActions.FindActionMap("Player").Enable();
@@ -53,13 +71,18 @@ public class PlayerMove : MonoBehaviour
         playerMoveAction = InputSystem.actions.FindAction("Move");
         playerJumpAction = InputSystem.actions.FindAction("Jump");
         playerLookAction = InputSystem.actions.FindAction("Look");
-        playerCrouchAction = InputSystem.actions.FindAction("Crouch"); // Đọc Action Crouch từ Input System
+        playerCrouchAction = InputSystem.actions.FindAction("Crouch");
+
+        if (playerAnimator == null)
+        {
+            playerAnimator = GetComponentInChildren<Animator>();
+        }
     }
 
     private void Start()
     {
         Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false; // Nên đổi thành false để ẩn hoàn toàn trỏ chuột khi chơi
+        Cursor.visible = false;
         currentSpeed = playerWalkSpeed;
     }
 
@@ -72,27 +95,31 @@ public class PlayerMove : MonoBehaviour
         CameraLook();
         Jump();
         PlayerMoveAndRotate();
+        UpdateAnimations();
     }
 
     private void HandleCrouch()
     {
-        // Khi nhấn nút Crouch (Ctrl / C)
         if (playerCrouchAction != null && playerCrouchAction.WasPressedThisFrame())
         {
             isCrouching = !isCrouching;
         }
 
-        // Đổi tốc độ khi khom
-        currentSpeed = isCrouching ? crouchSpeed : playerWalkSpeed;
+        if (!isTrapped)
+        {
+            currentSpeed = isCrouching ? crouchSpeed : playerWalkSpeed;
+        }
+        else
+        {
+            float baseSpeed = isCrouching ? crouchSpeed : playerWalkSpeed;
+            // Đã sửa lỗi thiếu dấu nhân (*) ở đây
+            currentSpeed = baseSpeed * trappedSpeedMultiplier;
+        }
 
-        // Thu nhỏ/Mở rộng chiều cao CharacterController
         float targetHeight = isCrouching ? crouchingHeight : standingHeight;
         playerCharacterController.height = Mathf.Lerp(playerCharacterController.height, targetHeight, Time.deltaTime * crouchTransitionSpeed);
-
-        // Điều chỉnh Center để chân nhân vật không bị lún xuống sàn
         playerCharacterController.center = new Vector3(0, playerCharacterController.height / 2f, 0);
 
-        // Hạ/Nâng vị trí Camera
         if (playerCamera != null)
         {
             float targetCamY = isCrouching ? crouchingCameraY : standingCameraY;
@@ -119,8 +146,7 @@ public class PlayerMove : MonoBehaviour
         {
             verticalVelocity = -1f;
 
-            // Không cho phép nhảy nếu đang khom người
-            if (playerJumpAction.WasPressedThisFrame() && !isCrouching)
+            if (playerJumpAction.WasPressedThisFrame() && !isCrouching && !isTrapped)
             {
                 verticalVelocity = jumpHeight;
             }
@@ -136,7 +162,30 @@ public class PlayerMove : MonoBehaviour
         Vector3 verticalMove = new Vector3(0f, verticalVelocity, 0f) * Time.deltaTime;
         Vector3 moveDirection = transform.right * playerMoveAmount.x + transform.forward * playerMoveAmount.y;
 
-        // Sử dụng currentSpeed (đã thay đổi tùy theo trạng thái Crouch)
         playerCharacterController.Move(moveDirection.normalized * currentSpeed * Time.deltaTime + verticalMove);
+    }
+
+    private void UpdateAnimations()
+    {
+        if (playerAnimator == null) return;
+
+        float inputMagnitude = playerMoveAmount.magnitude;
+
+        // Nếu không có thao tác di chuyển hoặc đang dính bẫy, ép giá trị Speed về 0 NGAY LẬP TỨC
+        float targetAnimSpeed = (inputMagnitude < 0.05f || isTrapped) ? 0f : (isCrouching ? 0.5f : 1.0f);
+
+        // Truyền trực tiếp với dampTime = 0f để cắt bỏ độ trễ khựng hình
+        playerAnimator.SetFloat("Speed", targetAnimSpeed, 0.0f, Time.deltaTime);
+
+        // Cập nhật các trạng thái Boolean dứt khoát theo thời gian thực
+        bool isMoving = inputMagnitude > 0.05f;
+
+        playerAnimator.SetBool("IsWalking", isMoving && !isCrouching);
+        playerAnimator.SetBool("IsStand_still", !isMoving && !isCrouching);
+
+        playerAnimator.SetBool("IsSneak", isCrouching);
+        playerAnimator.SetBool("IsSneak_Walking", isCrouching && isMoving);
+
+        playerAnimator.SetBool("IsAttacked", isTrapped);
     }
 }
