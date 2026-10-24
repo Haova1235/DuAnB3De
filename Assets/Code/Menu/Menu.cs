@@ -4,65 +4,81 @@ using UnityEngine.SceneManagement;
 
 public class MainMenuController : MonoBehaviour
 {
-    [Header("UI Panels")]
-    public GameObject settingsPanel;      // Kéo SettingsPanel Prefab vào đây
+    [Header("UI Panels & Buttons Container")]
+    public GameObject menuNutPanel;       // Kéo đối tượng chứa các nút menu chính (Play, Setting, Quit) vào đây
+    public GameObject settingsPanel;      // Kéo SettingsPanel vào đây
+    public GameObject creditsPanel;       // Kéo CreditsPanel vào đây
+
+    [Header("Credits Scroll")]
+    public ScrollRect creditsScrollRect;  // Kéo ScrollView (đối tượng Cuon) vào đây
 
     [Header("Settings Sliders & Overlay")]
-    public Slider volumeSlider;           // Kéo VolumeSlider vào đây
-    public Slider brightnessSlider;       // Kéo BrightnessSlider vào đây
-    public Image brightnessOverlay;       // Kéo Panel đen chỉnh độ sáng vào đây
+    public Slider volumeSlider;
+    public Slider brightnessSlider;
+    public Image brightnessOverlay;
 
     [Header("Menu Buttons")]
-    public Button quitButton;             // Kéo nút Quit từ Prefab Settings vào đây
+    public Button quitButton;
 
     void Start()
     {
-        // Tải lại các cài đặt đã lưu trước đó để đồng bộ
         LoadSettings();
 
-        if (settingsPanel != null)
-        {
-            settingsPanel.SetActive(false);
-        }
+        // Mặc định khi vào game: Hiện menu chính, ẩn các bảng phụ
+        if (settingsPanel != null) settingsPanel.SetActive(false);
+        if (creditsPanel != null) creditsPanel.SetActive(false);
+        if (menuNutPanel != null) menuNutPanel.SetActive(true);
 
-        if (volumeSlider != null)
-        {
-            volumeSlider.onValueChanged.AddListener(SetVolume);
-        }
-
-        if (brightnessSlider != null)
-        {
-            brightnessSlider.onValueChanged.AddListener(SetBrightness);
-        }
-
-        // Tự động gán sự kiện cho nút Quit trong bảng Setting
-        if (quitButton != null)
-        {
-            quitButton.onClick.AddListener(QuitGame);
-        }
+        if (volumeSlider != null) volumeSlider.onValueChanged.AddListener(SetVolume);
+        if (brightnessSlider != null) brightnessSlider.onValueChanged.AddListener(SetBrightness);
+        if (quitButton != null) quitButton.onClick.AddListener(QuitGame);
     }
 
     public void PlayGame()
     {
-        // Tải scene game tiếp theo (Scene chơi game)
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
     }
 
     public void OpenSettings()
     {
-        if (settingsPanel != null)
-        {
-            settingsPanel.SetActive(true);
-        }
+        if (settingsPanel != null) settingsPanel.SetActive(true);
+        if (menuNutPanel != null) menuNutPanel.SetActive(false);
     }
 
     public void CloseSettings()
     {
-        if (settingsPanel != null)
+        if (settingsPanel != null) settingsPanel.SetActive(false);
+        if (menuNutPanel != null) menuNutPanel.SetActive(true);
+        SaveSettings();
+    }
+
+    // --- QUẢN LÝ BẢNG CREDITS (Tích hợp chuẩn) ---
+    public void OpenCredits()
+    {
+        if (creditsPanel != null)
         {
-            settingsPanel.SetActive(false);
+            creditsPanel.SetActive(true);
+
+            // Ẩn các nút menu chính đi để không bị đè lên bảng Credits
+            if (menuNutPanel != null) menuNutPanel.SetActive(false);
+
+            // Đưa thanh cuộn về đỉnh trên cùng mỗi khi mở
+            if (creditsScrollRect != null)
+            {
+                creditsScrollRect.verticalNormalizedPosition = 1f;
+            }
         }
-        SaveSettings(); // Lưu lại thiết lập khi đóng bảng
+    }
+
+    public void CloseCredits()
+    {
+        if (creditsPanel != null)
+        {
+            creditsPanel.SetActive(false);
+
+            // Hiện lại các nút menu chính khi bấm quay lại
+            if (menuNutPanel != null) menuNutPanel.SetActive(true);
+        }
     }
 
     public void SetVolume(float volume)
@@ -82,14 +98,8 @@ public class MainMenuController : MonoBehaviour
 
     void SaveSettings()
     {
-        if (volumeSlider != null)
-        {
-            PlayerPrefs.SetFloat("MasterVolume", volumeSlider.value);
-        }
-        if (brightnessSlider != null)
-        {
-            PlayerPrefs.SetFloat("Brightness", brightnessSlider.value);
-        }
+        if (volumeSlider != null) PlayerPrefs.SetFloat("MasterVolume", volumeSlider.value);
+        if (brightnessSlider != null) PlayerPrefs.SetFloat("Brightness", brightnessSlider.value);
         PlayerPrefs.Save();
     }
 
@@ -97,10 +107,7 @@ public class MainMenuController : MonoBehaviour
     {
         float savedVolume = PlayerPrefs.GetFloat("MasterVolume", 1f);
         AudioListener.volume = savedVolume;
-        if (volumeSlider != null)
-        {
-            volumeSlider.value = savedVolume;
-        }
+        if (volumeSlider != null) volumeSlider.value = savedVolume;
 
         float savedBrightness = PlayerPrefs.GetFloat("Brightness", 0.5f);
         if (brightnessSlider != null)
@@ -113,11 +120,10 @@ public class MainMenuController : MonoBehaviour
     public void QuitGame()
     {
         Debug.Log("Đã thoát game!");
-
 #if UNITY_EDITOR
-        UnityEditor.EditorApplication.isPlaying = false; // Tắt chế độ Play khi test trong Unity Editor
+        UnityEditor.EditorApplication.isPlaying = false;
 #else
-            Application.Quit(); // Thoát hẳn game khi đã build file chạy thực tế
+        Application.Quit();
 #endif
     }
 }
