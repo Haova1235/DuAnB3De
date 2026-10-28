@@ -6,19 +6,20 @@ using System.Collections;
 public class EnemyCombat : MonoBehaviour
 {
     private NavMeshAgent agent;
+    private Animator enemyAnimator; // Thêm biến Animator
 
     [Header("Cài đặt Tấn công & Truy đuổi")]
     [SerializeField] private float chaseSpeed = 6f;
-    [SerializeField] private float rotationSpeed = 10f;
+    [SerializeField] private float rotationSpeed = 25f;
 
     [Header("Cài đặt Tấn công hình quạt (Attack Cone)")]
-    [SerializeField] private float attackRange = 2.71f;   // Bán kính tầm đánh
+    [SerializeField] private float attackRange = 2.71f;
     [Range(0f, 360f)]
-    [SerializeField] private float attackAngle = 90f;     // Góc quét tấn công
+    [SerializeField] private float attackAngle = 90f;
     [SerializeField] private float attackCooldown = 1.5f;
 
     [Header("Cài đặt Khựng sau khi tấn công (Recovery)")]
-    [SerializeField] private float attackRecoveryTime = 0.5f; // Thời gian đứng khựng lại sau khi ra đòn (giây)
+    [SerializeField] private float attackRecoveryTime = 0.5f;
     private float recoveryTimer = 0f;
 
     private float lastAttackTime;
@@ -30,6 +31,26 @@ public class EnemyCombat : MonoBehaviour
     void Start()
     {
         agent = GetComponent<NavMeshAgent>();
+        agent.angularSpeed = 360f; // Tăng tốc độ quay góc của NavMeshAgent cho mượt
+
+        // Tự động tìm Animator trên bản thân hoặc các object con bên trong
+        enemyAnimator = GetComponentInChildren<Animator>();
+    }
+
+    void Update()
+    {
+        // Cập nhật thông số Speed cho Animator dựa trên tốc độ thực tế của NavMeshAgent
+        if (enemyAnimator != null)
+        {
+            float currentSpeed = agent.velocity.magnitude;
+            enemyAnimator.SetFloat("Speed", currentSpeed, 0.1f, Time.deltaTime);
+        }
+
+        // Giảm thời gian recovery theo thời gian thực
+        if (recoveryTimer > 0f)
+        {
+            recoveryTimer -= Time.deltaTime;
+        }
     }
 
     public void Chase(Transform target)
@@ -43,6 +64,15 @@ public class EnemyCombat : MonoBehaviour
         agent.isStopped = false;
         agent.speed = chaseSpeed;
         agent.SetDestination(target.position);
+
+        // Xoay mặt mượt mà về hướng Player khi đang Chase
+        Vector3 direction = (target.position - transform.position);
+        direction.y = 0;
+        if (direction.sqrMagnitude > 0.01f)
+        {
+            Quaternion targetRotation = Quaternion.LookRotation(direction.normalized);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * rotationSpeed);
+        }
     }
 
     public void Attack(Transform target)
@@ -53,19 +83,16 @@ public class EnemyCombat : MonoBehaviour
             isSearching = false;
         }
 
-        // --- KIỂM TRA THỜI GIAN KHỰNG SAU TẤN CÔNG (RECOVERY) ---
         if (recoveryTimer > 0f)
         {
-            recoveryTimer -= Time.deltaTime;
-            agent.isStopped = true; // Dừng di chuyển trong lúc đang khựng ra đòn
-            return; // Thoát hàm sớm, chưa cho phép di chuyển hay đánh tiếp
+            agent.isStopped = true;
+            return;
         }
 
         agent.stoppingDistance = attackRange;
         agent.isStopped = false;
         agent.SetDestination(target.position);
 
-        // --- XOAY MẶT MƯỢT MÀ VỀ PHÍA PLAYER ---
         Vector3 direction = (target.position - transform.position);
         direction.y = 0;
         if (direction.sqrMagnitude > 0.01f)
@@ -74,7 +101,6 @@ public class EnemyCombat : MonoBehaviour
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * rotationSpeed);
         }
 
-        // KIỂM TRA ĐIỀU KIỆN TẤN CÔNG: 
         if (IsPlayerInFrontOfAttackCone(target))
         {
             if (Time.time >= lastAttackTime + attackCooldown)
@@ -82,9 +108,8 @@ public class EnemyCombat : MonoBehaviour
                 lastAttackTime = Time.time;
                 PerformAttackAction();
 
-                // Kích hoạt thời gian khựng sau khi vừa ra đòn xong
                 recoveryTimer = attackRecoveryTime;
-                agent.isStopped = true; // Dừng hẳn lại ngay khoảnh khắc tung đòn
+                agent.isStopped = true;
             }
         }
     }
@@ -101,18 +126,18 @@ public class EnemyCombat : MonoBehaviour
         forwardDir.y = 0;
 
         float angle = Vector3.Angle(forwardDir, directionToPlayer);
-
-        if (angle <= attackAngle / 2f)
-        {
-            return true;
-        }
-
-        return false;
+        return angle <= attackAngle / 2f;
     }
 
     void PerformAttackAction()
     {
         Debug.Log("Enemy tung đòn tấn công chính diện vào Player!");
+
+        // Kích hoạt Trigger Attack để chạy animation tấn công
+        if (enemyAnimator != null)
+        {
+            enemyAnimator.SetTrigger("Attack");
+        }
     }
 
     public void HandleLostPlayer(Vector3 lastKnownPosition, System.Action onFinishSearchCallback)
