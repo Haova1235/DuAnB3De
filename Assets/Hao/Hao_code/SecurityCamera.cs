@@ -1,9 +1,11 @@
+using UnityEditor.Rendering;
 using UnityEngine;
 
 public class SecurityCamera : MonoBehaviour
 {
     [Header("Security Camera Components")]
     public Camera securityCam;
+    public CameraUI cameraHUD; // Kéo component quản lý HUD UI vào đây
 
     private void Awake()
     {
@@ -13,6 +15,12 @@ public class SecurityCamera : MonoBehaviour
         if (securityCam != null)
         {
             securityCam.gameObject.SetActive(false);
+        }
+
+        // Tắt HUD khi mới khởi tạo
+        if (cameraHUD != null)
+        {
+            cameraHUD.SetHUDActive(false);
         }
     }
 
@@ -36,11 +44,20 @@ public class SecurityCamera : MonoBehaviour
         }
     }
 
-    public void EnableCameraView(bool active)
+    // Hàm duy nhất để quản lý bật/tắt góc nhìn và giao diện của camera
+    public void EnableCameraView(bool isEnabled)
     {
+        Debug.Log("Camera " + gameObject.name + " trạng thái: " + isEnabled);
+        // Bật hoặc tắt đối tượng Camera
         if (securityCam != null)
         {
-            securityCam.gameObject.SetActive(active);
+            securityCam.gameObject.SetActive(isEnabled);
+        }
+
+        // Bật hoặc tắt giao diện HUD tương ứng (đồng hồ + khung `[` `]`)
+        if (cameraHUD != null)
+        {
+            cameraHUD.SetHUDActive(isEnabled);
         }
     }
 }
