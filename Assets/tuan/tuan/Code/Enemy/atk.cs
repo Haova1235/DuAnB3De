@@ -6,7 +6,7 @@ using System.Collections;
 public class EnemyCombat : MonoBehaviour
 {
     private NavMeshAgent agent;
-    private Animator enemyAnimator; // Thêm biến Animator
+    private Animator enemyAnimator;
 
     [Header("Cài đặt Tấn công & Truy đuổi")]
     [SerializeField] private float chaseSpeed = 6f;
@@ -26,7 +26,29 @@ public class EnemyCombat : MonoBehaviour
     [SerializeField] private float attackRecoveryTime = 0.5f;
     private float recoveryTimer = 0f;
 
+    [Header("Âm thanh")]
+    [SerializeField] private SoundEffect attackWindupSound;
+    [SerializeField] private SoundEffect hitSound;
+    [Header("Âm thanh bước chân")]
+    [SerializeField] private SoundEffect enemyStepSound;
+    [SerializeField] private float patrolStepInterval = 0.7f;
+    [SerializeField] private float chaseStepInterval = 0.35f;
+    private float stepTimer = 0f;
+
+    [Header("Âm thanh phát hiện & nhạc rượt đuổi")]
+    [SerializeField] private SoundEffect spottedSound;
+    [Tooltip("Nhạc phát khi quái bắt đầu rượt. Để trống thì không đổi nhạc")]
+    [SerializeField] private AudioClip chaseMusic;
+    [Tooltip("Nhạc quay lại khi hết rượt (kéo cùng clip với BackgroundMusic)")]
+    [SerializeField] private AudioClip calmMusic;
+    [Tooltip("Sau bao nhiêu giây không còn bị gọi Chase/Attack thì coi như hết rượt")]
+    [SerializeField] private SoundEffect lostPlayerSound; // tiếng gầm/thở khi mất dấu Player
+    [SerializeField] private float chaseLostDelay = 1.5f;
+    private bool isChasingState = false;
+    private float lastChaseTime = -99f;
+
     private float lastAttackTime;
+    private float defaultStoppingDistance;
     private PlayerMove cachedPlayer;
 
     [HideInInspector] public bool isSearching = false;
@@ -36,28 +58,33 @@ public class EnemyCombat : MonoBehaviour
     void Start()
     {
         agent = GetComponent<NavMeshAgent>();
-        agent.angularSpeed = 360f; // Tăng tốc độ quay góc của NavMeshAgent cho mượt
+        agent.angularSpeed = 360f;
+        defaultStoppingDistance = agent.stoppingDistance;
 
-        // Tự động tìm Animator trên bản thân hoặc các object con bên trong
         enemyAnimator = GetComponentInChildren<Animator>();
+
         GameObject p = GameObject.FindGameObjectWithTag("Player");
-        if (p != null) cachedPlayer = p.GetComponentInParent<PlayerMove>();
+        if (p != null)
+        {
+            cachedPlayer = p.GetComponentInParent<PlayerMove>();
+            if (cachedPlayer == null) cachedPlayer = p.GetComponentInChildren<PlayerMove>();
+        }
     }
 
     void Update()
     {
-        // Cập nhật thông số Speed cho Animator dựa trên tốc độ thực tế của NavMeshAgent
         if (enemyAnimator != null)
         {
             float currentSpeed = agent.velocity.magnitude;
             enemyAnimator.SetFloat("Speed", currentSpeed, 0.1f, Time.deltaTime);
         }
 
-        // Giảm thời gian recovery theo thời gian thực
         if (recoveryTimer > 0f)
         {
             recoveryTimer -= Time.deltaTime;
         }
+        HandleEnemyFootsteps();
+        UpdateChaseState();
     }
 
     public void Chase(Transform target)
@@ -67,6 +94,7 @@ public class EnemyCombat : MonoBehaviour
             agent.isStopped = true;
             return;
         }
+        MarkChasing();
         if (isWindingUp) return;
         if (isSearching)
         {
@@ -75,11 +103,11 @@ public class EnemyCombat : MonoBehaviour
             isWindingUp = false;
         }
 
+        agent.stoppingDistance = defaultStoppingDistance;
         agent.isStopped = false;
         agent.speed = chaseSpeed;
         agent.SetDestination(target.position);
 
-        // Xoay mặt mượt mà về hướng Player khi đang Chase
         Vector3 direction = (target.position - transform.position);
         direction.y = 0;
         if (direction.sqrMagnitude > 0.01f)
@@ -96,6 +124,7 @@ public class EnemyCombat : MonoBehaviour
             agent.isStopped = true;
             return;
         }
+        MarkChasing();
         if (isSearching)
         {
             StopAllCoroutines();
@@ -129,17 +158,19 @@ public class EnemyCombat : MonoBehaviour
             StartCoroutine(AttackWindupRoutine(target));
         }
     }
+
     IEnumerator AttackWindupRoutine(Transform target)
     {
         isWindingUp = true;
         lastAttackTime = Time.time;
 
-        // Dừng lại và bắt đầu vung đòn (animation chạy ngay)
+        // Dừng lại và bắt đầu vung đòn
         agent.isStopped = true;
         agent.velocity = Vector3.zero;
         if (enemyAnimator != null) enemyAnimator.SetTrigger("Attack");
+        attackWindupSound.PlayAt(transform.position);
 
-        // Chờ 1 giây, vẫn quay mặt theo Player
+        // Chờ, vẫn quay mặt theo Player
         float timer = 0f;
         while (timer < attackWindupTime)
         {
@@ -182,25 +213,40 @@ public class EnemyCombat : MonoBehaviour
     void DealDamageToPlayer()
     {
         if (cachedPlayer == null || cachedPlayer.IsDefeated) return;
+
         Debug.Log("Enemy đánh trúng Player!");
+        hitSound.PlayAt(cachedPlayer.transform.position);
         cachedPlayer.TriggerPlayerDefeat();
     }
 
     public void HandleLostPlayer(Vector3 lastKnownPosition, System.Action onFinishSearchCallback)
     {
         if (isSearching) return;
+        lostPlayerSound.PlayAt(transform.position);
         StartCoroutine(SearchRoutine(lastKnownPosition, onFinishSearchCallback));
     }
 
     IEnumerator SearchRoutine(Vector3 targetPos, System.Action onFinishSearch)
     {
         isSearching = true;
+        agent.stoppingDistance = defaultStoppingDistance;
         agent.isStopped = false;
         agent.speed = chaseSpeed;
         agent.SetDestination(targetPos);
 
+        // Có giới hạn thời gian và thoát khi đường bị chặn (ví dụ cửa khóa)
+        float waitTimer = 0f;
+        float maxTravelTime = 15f;
+
         while (agent.pathPending || agent.remainingDistance > attackRange + 0.5f)
         {
+            waitTimer += Time.deltaTime;
+            if (waitTimer >= maxTravelTime) break;
+
+            if (!agent.pathPending && agent.pathStatus == NavMeshPathStatus.PathPartial
+                && agent.remainingDistance <= agent.stoppingDistance + 0.1f)
+                break;
+
             yield return null;
         }
 
@@ -212,7 +258,6 @@ public class EnemyCombat : MonoBehaviour
 
         while (timer < searchDuration)
         {
-            // Đã sửa lỗi dấu nhân và số ở đây: từ 'timer4f' thành 'timer * 4f'
             float angleOffset = Mathf.Sin(timer * 4f) * 45f;
             transform.rotation = startRot * Quaternion.Euler(0, angleOffset, 0);
 
@@ -240,4 +285,60 @@ public class EnemyCombat : MonoBehaviour
         Gizmos.DrawRay(transform.position, leftRayDir * attackRange);
         Gizmos.DrawRay(transform.position, rightRayDir * attackRange);
     }
+    // Gọi mỗi lần Chase()/Attack() chạy. Lần đầu tiên là lúc quái phát hiện Player
+    private void MarkChasing()
+    {
+        lastChaseTime = Time.time;
+
+        if (isChasingState)
+        {
+            // Đang lùng sục mà thấy lại Player thì kêu lại tiếng phát hiện
+            if (isSearching) spottedSound.PlayAt(transform.position);
+            return;
+        }
+
+        isChasingState = true;
+        spottedSound.PlayAt(transform.position);
+        if (chaseMusic != null) BackgroundMusic.Instance?.Play(chaseMusic);
+    }
+
+    private void UpdateChaseState()
+    {
+        if (!isChasingState) return;
+        if (cachedPlayer != null && cachedPlayer.IsDefeated) return;
+
+        // Đang vung đòn hoặc đang lùng sục thì vẫn tính là đang rượt
+        if (isSearching || isWindingUp)
+        {
+            lastChaseTime = Time.time;
+            return;
+        }
+
+        if (Time.time - lastChaseTime > chaseLostDelay)
+        {
+            isChasingState = false;
+            if (calmMusic != null) BackgroundMusic.Instance?.Play(calmMusic);
+        }
+    }
+
+    private void HandleEnemyFootsteps()
+    {
+        float interval = isChasingState ? chaseStepInterval : patrolStepInterval;
+        bool isMoving = !agent.isStopped && agent.velocity.magnitude > 0.2f;
+
+        if (!isMoving)
+        {
+            stepTimer = interval; // bắt đầu đi là có tiếng bước ngay
+            enemyStepSound.Stop();
+            return;
+        }
+
+        stepTimer += Time.deltaTime;
+        if (stepTimer >= interval)
+        {
+            stepTimer = 0f;
+            enemyStepSound.PlayAt(transform.position);
+        }
+    }
+
 }

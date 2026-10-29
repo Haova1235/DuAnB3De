@@ -39,12 +39,33 @@ public class PlayerMove : MonoBehaviour
     [SerializeField] private float crouchingCameraY = 0.7f;
     [SerializeField] private float crouchTransitionSpeed = 10f;
 
+    [Header("Âm thanh")]
+    [SerializeField] private SoundEffect walkStepSound;
+    [SerializeField] private SoundEffect crouchStepSound;
+    [SerializeField] private SoundEffect jumpSound;
+    [SerializeField] private SoundEffect landSound;
+    [SerializeField] private SoundEffect defeatSound;
+    [SerializeField] private float walkStepInterval = 0.5f;
+    [SerializeField] private float crouchStepInterval = 0.8f;
+    [Tooltip("Tick: dừng tiếng bước chân ngay khi thả phím")]
+    [SerializeField] private bool stopStepSoundWhenStopped = true;
+    [Tooltip("Tick: phát 1 clip dài liên tục khi đi (nhớ tick Loop trong Walk Step Sound). Bỏ tick: phát từng tiếng theo nhịp Step Interval")]
+    [SerializeField] private bool continuousStepSound = false;
+    private float stepTimer = 0f;
+    private float airTime = 0f;
+    private bool wasGrounded = true;
+
     private bool isCrouching = false;
     private float currentSpeed;
 
-    public bool IsDefeated => isDefeated;
+    // --- BIẾN QUẢN LÝ TRẠNG THÁI BỊ BẪY ---
     private bool isTrapped = false;
     private float trappedSpeedMultiplier = 1.0f;
+
+    [Header("UI & Defeat Settings")]
+    [SerializeField] private GameObject defeatUIPanel; // Kéo Panel Defeat UI vào đây
+    private bool isDefeated = false;
+    public bool IsDefeated => isDefeated;
 
     public float moveSpeed
     {
@@ -97,6 +118,7 @@ public class PlayerMove : MonoBehaviour
         CameraLook();
         Jump();
         PlayerMoveAndRotate();
+        HandleFootsteps();
         UpdateAnimations();
     }
 
@@ -114,7 +136,6 @@ public class PlayerMove : MonoBehaviour
         else
         {
             float baseSpeed = isCrouching ? crouchSpeed : playerWalkSpeed;
-            // Đã sửa lỗi thiếu dấu nhân (*) ở đây
             currentSpeed = baseSpeed * trappedSpeedMultiplier;
         }
 
@@ -151,6 +172,7 @@ public class PlayerMove : MonoBehaviour
             if (playerJumpAction.WasPressedThisFrame() && !isCrouching && !isTrapped)
             {
                 verticalVelocity = jumpHeight;
+                jumpSound.Play2D();
             }
         }
         else
@@ -167,6 +189,60 @@ public class PlayerMove : MonoBehaviour
         playerCharacterController.Move(moveDirection.normalized * currentSpeed * Time.deltaTime + verticalMove);
     }
 
+    private void HandleFootsteps()
+    {
+        bool grounded = playerCharacterController.isGrounded;
+
+        // Tiếng tiếp đất, chỉ kêu khi rơi đủ lâu để không kêu khi bước xuống dốc nhỏ
+        if (!grounded)
+        {
+            airTime += Time.deltaTime;
+        }
+        else
+        {
+            if (!wasGrounded && airTime > 0.25f) landSound.Play2D();
+            airTime = 0f;
+        }
+        wasGrounded = grounded;
+
+        // Dùng vận tốc thực tế nên bị bẫy làm chậm hay kẹt tường cũng không kêu sai
+        Vector3 horizontalVelocity = playerCharacterController.velocity;
+        horizontalVelocity.y = 0f;
+
+        float interval = isCrouching ? crouchStepInterval : walkStepInterval;
+        bool isMovingOnGround = grounded && horizontalVelocity.magnitude >= 0.2f;
+
+        SoundEffect currentStep = isCrouching ? crouchStepSound : walkStepSound;
+        SoundEffect otherStep = isCrouching ? walkStepSound : crouchStepSound;
+
+        if (!isMovingOnGround)
+        {
+            stepTimer = interval; // vừa bắt đầu đi là có tiếng bước đầu ngay
+            if (stopStepSoundWhenStopped)
+            {
+                walkStepSound.Stop();
+                crouchStepSound.Stop();
+            }
+            return;
+        }
+
+        // Đang đi bộ mà chuyển sang cúi (hoặc ngược lại) thì tắt tiếng của kiểu kia
+        otherStep.Stop();
+
+        if (continuousStepSound)
+        {
+            if (!currentStep.IsPlaying) currentStep.Play2D();
+            return;
+        }
+
+        stepTimer += Time.deltaTime;
+        if (stepTimer >= interval)
+        {
+            stepTimer = 0f;
+            currentStep.Play2D();
+        }
+    }
+
     private void UpdateAnimations()
     {
         if (playerAnimator == null) return;
@@ -176,10 +252,8 @@ public class PlayerMove : MonoBehaviour
         // Nếu không có thao tác di chuyển hoặc đang dính bẫy, ép giá trị Speed về 0 NGAY LẬP TỨC
         float targetAnimSpeed = (inputMagnitude < 0.05f || isTrapped) ? 0f : (isCrouching ? 0.5f : 1.0f);
 
-        // Truyền trực tiếp với dampTime = 0f để cắt bỏ độ trễ khựng hình
         playerAnimator.SetFloat("Speed", targetAnimSpeed, 0.0f, Time.deltaTime);
 
-        // Cập nhật các trạng thái Boolean dứt khoát theo thời gian thực
         bool isMoving = inputMagnitude > 0.05f;
 
         playerAnimator.SetBool("IsWalking", isMoving && !isCrouching);
@@ -187,20 +261,21 @@ public class PlayerMove : MonoBehaviour
 
         playerAnimator.SetBool("IsSneak", isCrouching);
         playerAnimator.SetBool("IsSneak_Walking", isCrouching && isMoving);
-
     }
-    [Header("UI & Defeat Settings")]
-    [SerializeField] private GameObject defeatUIPanel; // Kéo Panel Defeat UI vào đây
-    private bool isDefeated = false;
 
     // Hàm này được gọi từ Enemy khi tấn công trúng Player
     public void TriggerPlayerDefeat()
     {
         if (isDefeated) return;
         isDefeated = true;
-        Debug.Log("TriggerPlayerDefeat chạy. Animator=" + playerAnimator + " Panel=" + defeatUIPanel);
 
-        // Kích hoạt animation ngã bằng SetBool vì IsAttacked là kiểu Bool
+        // Update() sẽ ngừng chạy nên phải tắt tiếng bước chân tại đây
+        walkStepSound.Stop();
+        crouchStepSound.Stop();
+
+        defeatSound.Play2D();
+        BackgroundMusic.Instance?.Stop(1f); // tùy chọn: tắt dần nhạc nền khi thua, xóa dòng này nếu không muốn
+
         if (playerAnimator != null)
         {
             playerAnimator.SetBool("IsAttacked", true);
@@ -209,26 +284,22 @@ public class PlayerMove : MonoBehaviour
         // Khóa mọi input di chuyển của người chơi
         this.enabled = false;
 
-        // Bắt đầu đếm ngược 5 giây để dừng game và hiện UI Defeat
         StartCoroutine(DefeatSequenceRoutine());
     }
 
     private IEnumerator DefeatSequenceRoutine()
     {
-        // Đợi đúng 5 giây để animation ngã chạy xong
+        // Đợi để animation ngã chạy xong
         yield return new WaitForSeconds(5f);
 
-        // Hiển thị UI Defeat
         if (defeatUIPanel != null)
         {
             defeatUIPanel.SetActive(true);
         }
 
-        // Hiện con chuột để người chơi bấm nút Thử lại / Thoát
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
-        // Dừng toàn bộ thời gian trong game
         Time.timeScale = 0f;
     }
 }
