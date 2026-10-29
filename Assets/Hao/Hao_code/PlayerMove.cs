@@ -1,5 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using System.Collections;
+using System.Collections.Generic;
 
 public class PlayerMove : MonoBehaviour
 {
@@ -40,7 +42,7 @@ public class PlayerMove : MonoBehaviour
     private bool isCrouching = false;
     private float currentSpeed;
 
-    // --- BIẾN QUẢN LÝ TRẠNG THÁI BỊ BẪY ---
+    public bool IsDefeated => isDefeated;
     private bool isTrapped = false;
     private float trappedSpeedMultiplier = 1.0f;
 
@@ -186,6 +188,47 @@ public class PlayerMove : MonoBehaviour
         playerAnimator.SetBool("IsSneak", isCrouching);
         playerAnimator.SetBool("IsSneak_Walking", isCrouching && isMoving);
 
-        playerAnimator.SetBool("IsAttacked", isTrapped);
+    }
+    [Header("UI & Defeat Settings")]
+    [SerializeField] private GameObject defeatUIPanel; // Kéo Panel Defeat UI vào đây
+    private bool isDefeated = false;
+
+    // Hàm này được gọi từ Enemy khi tấn công trúng Player
+    public void TriggerPlayerDefeat()
+    {
+        if (isDefeated) return;
+        isDefeated = true;
+        Debug.Log("TriggerPlayerDefeat chạy. Animator=" + playerAnimator + " Panel=" + defeatUIPanel);
+
+        // Kích hoạt animation ngã bằng SetBool vì IsAttacked là kiểu Bool
+        if (playerAnimator != null)
+        {
+            playerAnimator.SetBool("IsAttacked", true);
+        }
+
+        // Khóa mọi input di chuyển của người chơi
+        this.enabled = false;
+
+        // Bắt đầu đếm ngược 5 giây để dừng game và hiện UI Defeat
+        StartCoroutine(DefeatSequenceRoutine());
+    }
+
+    private IEnumerator DefeatSequenceRoutine()
+    {
+        // Đợi đúng 5 giây để animation ngã chạy xong
+        yield return new WaitForSeconds(5f);
+
+        // Hiển thị UI Defeat
+        if (defeatUIPanel != null)
+        {
+            defeatUIPanel.SetActive(true);
+        }
+
+        // Hiện con chuột để người chơi bấm nút Thử lại / Thoát
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
+        // Dừng toàn bộ thời gian trong game
+        Time.timeScale = 0f;
     }
 }
