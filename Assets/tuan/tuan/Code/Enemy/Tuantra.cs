@@ -12,7 +12,10 @@ public class EnemyPatrol : MonoBehaviour
     [SerializeField] private float patrolSpeed = 3.5f;
 
     [Tooltip("Tầm quét riêng biệt để chọn vị trí ngẫu nhiên cho Enemy")]
-    [SerializeField] private float randomSearchRadius = 10f; // Bán kính vòng tròn quét điểm ngẫu nhiên
+    [SerializeField] private float randomSearchRadius = 10f;
+
+    [Tooltip("Số lần thử tối đa để tìm điểm đi tới được")]
+    [SerializeField] private int maxPickAttempts = 10;
 
     private Vector3 currentRandomDestination;
     private bool hasDestination = false;
@@ -29,46 +32,47 @@ public class EnemyPatrol : MonoBehaviour
         agent.isStopped = false;
         agent.speed = patrolSpeed;
 
-        // Nếu chưa có điểm đến hoặc đã tới điểm ngẫu nhiên (hoặc đường đi bị lỗi/chặn)
-        if (!hasDestination || (!agent.pathPending && (agent.remainingDistance <= agent.stoppingDistance || agent.pathStatus == NavMeshPathStatus.PathInvalid)))
+        // Chưa có điểm đến, đã tới nơi, hoặc đường đi bị lỗi/chặn (ví dụ cửa vừa đóng)
+        if (!hasDestination || (!agent.pathPending && (agent.remainingDistance <= agent.stoppingDistance || agent.pathStatus != NavMeshPathStatus.PathComplete)))
         {
             SetNewRandomDestination();
         }
 
-        // Gọi script đặt bẫy hoạt động khi tuần tra
         if (trapSpawner != null)
         {
             trapSpawner.TickTrapTimer();
         }
     }
 
-    // Hàm quét chọn vị trí ngẫu nhiên trong bán kính randomSearchRadius độc lập
+    // Chọn điểm ngẫu nhiên mà Enemy THẬT SỰ đi tới được (bỏ qua phòng sau cửa khóa)
     public void SetNewRandomDestination()
     {
-        // Tạo một điểm ngẫu nhiên nằm trong hình cầu/vòng tròn bán kính randomSearchRadius quanh vị trí Enemy
-        Vector3 randomPoint = transform.position + Random.insideUnitSphere * randomSearchRadius;
+        NavMeshPath path = new NavMeshPath();
 
-        NavMeshHit hit;
-        // Kiểm tra xem điểm ngẫu nhiên đó có nằm trên mặt phẳng NavMesh đã Bake hay không
-        if (NavMesh.SamplePosition(randomPoint, out hit, randomSearchRadius, NavMesh.AllAreas))
+        for (int i = 0; i < maxPickAttempts; i++)
         {
-            currentRandomDestination = hit.position;
-            agent.SetDestination(currentRandomDestination);
-            hasDestination = true;
+            Vector3 randomPoint = transform.position + Random.insideUnitSphere * randomSearchRadius;
+
+            if (NavMesh.SamplePosition(randomPoint, out NavMeshHit hit, randomSearchRadius, NavMesh.AllAreas))
+            {
+                if (agent.CalculatePath(hit.position, path) && path.status == NavMeshPathStatus.PathComplete)
+                {
+                    currentRandomDestination = hit.position;
+                    agent.SetPath(path);
+                    hasDestination = true;
+                    return;
+                }
+            }
         }
-        else
-        {
-            hasDestination = false; // Nếu chọn trúng góc không Bake được, lượt sau sẽ thử chọn lại
-        }
+
+        hasDestination = false; // lượt sau thử lại
     }
 
-    // Vẽ tầm quét vị trí ngẫu nhiên bằng màu xanh lam (Cyan) trên cửa sổ Scene View để dễ canh chỉnh
     private void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.cyan;
         Gizmos.DrawWireSphere(transform.position, randomSearchRadius);
 
-        // Vẽ thêm vị trí mục tiêu ngẫu nhiên hiện tại (nếu có)
         if (hasDestination)
         {
             Gizmos.color = Color.green;

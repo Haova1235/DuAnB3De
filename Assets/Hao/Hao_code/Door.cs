@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
 
 public class Door : MonoBehaviour
 {
@@ -10,6 +11,10 @@ public class Door : MonoBehaviour
     [Header("Animator Settings")]
     [SerializeField] private Animator doorAnimator;
     [SerializeField] private string boolParameterName = "isOpen";
+
+    [Header("NavMesh")]
+    [Tooltip("NavMeshObstacle đặt ở khung cửa (không xoay theo cánh cửa)")]
+    [SerializeField] private NavMeshObstacle navBlocker;
 
     private bool isOpen = false;
 
@@ -22,6 +27,12 @@ public class Door : MonoBehaviour
         {
             locksOnDoor.AddRange(GetComponentsInChildren<LockBase>());
         }
+
+        if (navBlocker != null)
+        {
+            navBlocker.carving = true;
+        }
+        UpdateNavBlock();
     }
 
     public bool CheckIsLocked()
@@ -91,5 +102,14 @@ public class Door : MonoBehaviour
         {
             doorAnimator.SetBool(boolParameterName, isOpen);
         }
+
+        UpdateNavBlock();
+    }
+
+    // Cửa khóa hoặc đang đóng thì chặn NavMesh, mở rồi thì thông đường
+    private void UpdateNavBlock()
+    {
+        if (navBlocker == null) return;
+        navBlocker.enabled = CheckIsLocked() || !isOpen;
     }
 }

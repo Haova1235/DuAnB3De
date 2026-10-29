@@ -5,6 +5,9 @@ public class Padlock : LockBase
     [Header("Padlock Settings")]
     public string requiredKeyID = "key1";
 
+    [Tooltip("Tick: chìa biến mất sau khi dùng. Bỏ tick: chìa vẫn còn trên tay")]
+    [SerializeField] private bool consumeKeyOnUse = true;
+
     [SerializeField] private Rigidbody padlockRigidbody;
     private ObjectOutline outlineTarget;
 
@@ -31,8 +34,11 @@ public class Padlock : LockBase
             isLocked = false;
 
             // Xóa chìa khóa trên tay
-            playerInventory.DropItem();
-            Destroy(heldItem.gameObject);
+            if (consumeKeyOnUse)
+            {
+                playerInventory.DropItem();
+                Destroy(heldItem.gameObject);
+            }
 
             UnlockEffects();
             return true; // Đã mở thành công khóa này

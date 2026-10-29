@@ -11,6 +11,7 @@ public class Item : MonoBehaviour, IOutlineable
     [Tooltip("Lực ném/thả của riêng item này (vd: chìa khóa 2, cục đá 10)")]
     public float throwForce = 5f;
 
+
     private Rigidbody rb;
     private Collider itemCollider;
     private ObjectOutline outlineTarget;
